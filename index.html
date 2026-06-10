@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0d1216" />
+    <title>Langarnama</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #0d1216;
+      }
+
+      #app-loading {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 30px;
+        overflow: hidden;
+        background: linear-gradient(180deg, #0a0f14 0%, #0d161d 55%, #0a1118 100%);
+        font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+        transition: opacity 0.5s ease;
+      }
+      #app-loading.app-loading--hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* faint horizon scanlines */
+      #app-loading::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+          180deg,
+          rgba(34, 211, 238, 0.025) 0px,
+          rgba(34, 211, 238, 0.025) 1px,
+          transparent 1px,
+          transparent 5px
+        );
+        pointer-events: none;
+      }
+      /* drifting ocean glow at the bottom */
+      #app-loading::after {
+        content: "";
+        position: absolute;
+        left: -25%;
+        right: -25%;
+        bottom: -120px;
+        height: 280px;
+        background: radial-gradient(
+          ellipse at 50% 100%,
+          rgba(6, 182, 212, 0.16) 0%,
+          transparent 65%
+        );
+        animation: app-loading-tide 6s ease-in-out infinite;
+        pointer-events: none;
+      }
+      @keyframes app-loading-tide {
+        0%,
+        100% {
+          transform: translateY(0) scaleX(1);
+          opacity: 0.8;
+        }
+        50% {
+          transform: translateY(-18px) scaleX(1.06);
+          opacity: 1;
+        }
+      }
+
+      #app-loading > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      /* ===== compass rose ===== */
+      .app-loading__compass {
+        position: relative;
+        width: 182px;
+        height: 182px;
+      }
+      .app-loading__bezel,
+      .app-loading__bezel-ticks {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+      }
+      .app-loading__bezel {
+        border: 1px solid rgba(34, 211, 238, 0.4);
+        box-shadow: 0 0 44px rgba(6, 182, 212, 0.16),
+          inset 0 0 28px rgba(6, 182, 212, 0.07);
+        background: radial-gradient(
+          circle,
+          rgba(6, 182, 212, 0.07) 0%,
+          rgba(6, 182, 212, 0.02) 60%,
+          transparent 80%
+        );
+      }
+      /* rotating tick ring */
+      .app-loading__bezel-ticks {
+        inset: 6px;
+        background: repeating-conic-gradient(
+          from 0deg,
+          rgba(34, 211, 238, 0.55) 0deg 0.8deg,
+          transparent 0.8deg 10deg
+        );
+        -webkit-mask: radial-gradient(circle, transparent 86%, black 87%);
+        mask: radial-gradient(circle, transparent 86%, black 87%);
+        animation: app-loading-bezel 18s linear infinite;
+      }
+      @keyframes app-loading-bezel {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .app-loading__inner-ring {
+        position: absolute;
+        inset: 30px;
+        border-radius: 50%;
+        border: 1px dashed rgba(34, 211, 238, 0.22);
+        animation: app-loading-bezel 40s linear infinite reverse;
+      }
+
+      .app-loading__cardinal {
+        position: absolute;
+        font-size: 11px;
+        letter-spacing: 0;
+        color: rgba(255, 255, 255, 0.55);
+      }
+      .app-loading__cardinal--n {
+        top: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #22d3ee;
+        text-shadow: 0 0 8px rgba(34, 211, 238, 0.8);
+      }
+      .app-loading__cardinal--s {
+        bottom: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .app-loading__cardinal--e {
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+      .app-loading__cardinal--w {
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      /* swinging needle */
+      .app-loading__needle {
+        position: absolute;
+        inset: 0;
+        animation: app-loading-seek 3.4s ease-in-out infinite;
+      }
+      .app-loading__needle svg {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 120px;
+        height: 120px;
+        margin: -60px 0 0 -60px;
+        display: block;
+      }
+      @keyframes app-loading-seek {
+        0%,
+        100% {
+          transform: rotate(-32deg);
+        }
+        45% {
+          transform: rotate(26deg);
+        }
+        70% {
+          transform: rotate(12deg);
+        }
+      }
+
+      .app-loading__hub {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 12px;
+        height: 12px;
+        margin: -6px 0 0 -6px;
+        border-radius: 50%;
+        background: #0a0f14;
+        border: 2px solid #22d3ee;
+        box-shadow: 0 0 12px rgba(34, 211, 238, 0.8);
+      }
+
+      /* ===== wordmark ===== */
+      .app-loading__brand {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 7px;
+      }
+      .app-loading__title {
+        font-size: 17px;
+        font-weight: 600;
+        letter-spacing: 8px;
+        margin-right: -8px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.92);
+      }
+      .app-loading__title::after {
+        content: "_";
+        color: #22d3ee;
+        animation: app-loading-cursor 1s steps(2) infinite;
+      }
+      @keyframes app-loading-cursor {
+        to {
+          opacity: 0;
+        }
+      }
+      .app-loading__subtitle {
+        font-size: 9px;
+        letter-spacing: 5px;
+        margin-right: -5px;
+        text-transform: uppercase;
+        color: rgba(34, 211, 238, 0.55);
+      }
+
+      /* ===== segmented progress ===== */
+      .app-loading__segments {
+        display: flex;
+        gap: 5px;
+      }
+      .app-loading__segment {
+        width: 16px;
+        height: 5px;
+        border-radius: 1px;
+        background: rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+        position: relative;
+      }
+      .app-loading__segment::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, #06b6d4, #22d3ee);
+        box-shadow: 0 0 8px rgba(34, 211, 238, 0.8);
+        opacity: 0;
+        animation: app-loading-seg 2.4s linear infinite;
+      }
+      @keyframes app-loading-seg {
+        0% {
+          opacity: 0;
+        }
+        12% {
+          opacity: 1;
+        }
+        70% {
+          opacity: 1;
+        }
+        82%,
+        100% {
+          opacity: 0;
+        }
+      }
+
+      .app-loading__status {
+        min-height: 16px;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 11px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        transition: opacity 0.3s ease;
+      }
+      .app-loading__status::before {
+        content: "> ";
+        color: #22d3ee;
+      }
+      .app-loading__status--fade {
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="app-loading">
+      <div class="app-loading__compass">
+        <div class="app-loading__bezel"></div>
+        <div class="app-loading__bezel-ticks"></div>
+        <div class="app-loading__inner-ring"></div>
+        <span class="app-loading__cardinal app-loading__cardinal--n">N</span>
+        <span class="app-loading__cardinal app-loading__cardinal--e">E</span>
+        <span class="app-loading__cardinal app-loading__cardinal--s">S</span>
+        <span class="app-loading__cardinal app-loading__cardinal--w">W</span>
+        <div class="app-loading__needle">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <polygon points="60,8 67,60 60,52 53,60" fill="#22d3ee" />
+            <polygon
+              points="60,112 67,60 60,68 53,60"
+              fill="rgba(255,255,255,0.28)"
+            />
+          </svg>
+        </div>
+        <div class="app-loading__hub"></div>
+      </div>
+
+      <div class="app-loading__brand">
+        <div class="app-loading__title">Langarnama</div>
+        <div class="app-loading__subtitle">Maritime Tracking</div>
+      </div>
+
+      <div class="app-loading__segments" aria-hidden="true">
+        <div class="app-loading__segment" style="animation-delay: 0s"></div>
+        <div class="app-loading__segment"></div>
+        <div class="app-loading__segment"></div>
+        <div class="app-loading__segment"></div>
+        <div class="app-loading__segment"></div>
+        <div class="app-loading__segment"></div>
+        <div class="app-loading__segment"></div>
+        <div class="app-loading__segment"></div>
+        <div class="app-loading__segment"></div>
+        <div class="app-loading__segment"></div>
+      </div>
+      <div class="app-loading__status" id="app-loading-status">
+        Calibrating compass
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var messages = [
+          "Calibrating compass",
+          "Plotting shipping lanes",
+          "Syncing vessel manifest",
+          "Raising map layers",
+          "Weighing anchor",
+        ];
+        var segments = document.querySelectorAll(".app-loading__segment");
+        for (var s = 0; s < segments.length; s++) {
+          segments[s].style.animationDelay = (s * 0.18).toFixed(2) + "s";
+        }
+        var el = document.getElementById("app-loading-status");
+        var i = 0;
+        var timer = setInterval(function () {
+          var loader = document.getElementById("app-loading");
+          if (!el || !loader || loader.classList.contains("app-loading--hidden")) {
+            clearInterval(timer);
+            return;
+          }
+          el.classList.add("app-loading__status--fade");
+          setTimeout(function () {
+            i = Math.min(i + 1, messages.length - 1);
+            el.textContent = messages[i];
+            el.classList.remove("app-loading__status--fade");
+          }, 300);
+        }, 1600);
+      })();
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
