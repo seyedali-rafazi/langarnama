@@ -42,27 +42,38 @@ function StatItem({ label, value, accent, active, onClick }: StatItemProps) {
     <Box
       onClick={onClick}
       sx={{
-        px: { xs: 1.5, md: 2.5 },
-        py: 1.25,
+        px: { xs: 1.25, sm: 1.5, lg: 2 },
+        py: { xs: 1, lg: 1.25 },
         minWidth: 0,
         cursor: onClick ? "pointer" : "default",
-        borderRadius: 1,
+        borderRadius: { xs: 1, lg: 0 },
         border: "1px solid",
-        borderColor: active ? "rgba(34,211,238,0.5)" : "transparent",
-        bgcolor: active ? "rgba(34,211,238,0.08)" : "transparent",
+        borderColor: active
+          ? "rgba(34,211,238,0.5)"
+          : { xs: "rgba(255,255,255,0.07)", lg: "transparent" },
+        bgcolor: active
+          ? "rgba(34,211,238,0.08)"
+          : { xs: "rgba(255,255,255,0.03)", lg: "transparent" },
         transition: "all 0.2s ease",
         "&:hover": onClick
-          ? { bgcolor: active ? "rgba(34,211,238,0.12)" : "rgba(255,255,255,0.04)" }
+          ? {
+              bgcolor: active
+                ? "rgba(34,211,238,0.12)"
+                : { xs: "rgba(255,255,255,0.06)", lg: "rgba(255,255,255,0.04)" },
+            }
           : undefined,
       }}
     >
       <Typography
         sx={{
           fontFamily: MONO,
-          fontSize: "0.58rem",
-          letterSpacing: "0.16em",
+          fontSize: { xs: "0.52rem", sm: "0.55rem", lg: "0.58rem" },
+          letterSpacing: { xs: "0.06em", sm: "0.1em", lg: "0.14em" },
           color: "rgba(255,255,255,0.42)",
+          lineHeight: 1.35,
           whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
         }}
       >
         {label}
@@ -70,10 +81,12 @@ function StatItem({ label, value, accent, active, onClick }: StatItemProps) {
       <Typography
         sx={{
           fontFamily: MONO,
-          fontSize: { xs: "1.1rem", md: "1.35rem" },
+          fontSize: { xs: "1rem", sm: "1.1rem", lg: "1.3rem" },
           fontWeight: 700,
-          lineHeight: 1.3,
+          lineHeight: 1.25,
+          mt: 0.25,
           color: accent ?? "rgba(255,255,255,0.92)",
+          whiteSpace: "nowrap",
         }}
       >
         {value}
@@ -175,18 +188,28 @@ function ShipListPage() {
           </Typography>
         </Box>
 
-        {/* stat strip */}
-        <Stack
-          direction="row"
-          alignItems="stretch"
+        {/* stat strip — 2 cols on phone, 3 on tablet, single row on desktop */}
+        <Box
           sx={{
             mb: 2.5,
             borderRadius: 1.5,
             border: "1px solid rgba(255,255,255,0.08)",
             bgcolor: "rgba(17,23,28,0.85)",
-            overflowX: "auto",
-            "& > *:not(:last-child)": {
-              borderRight: "1px solid rgba(255,255,255,0.07)",
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "repeat(2, minmax(0, 1fr))",
+              sm: "repeat(3, minmax(0, 1fr))",
+              lg: "repeat(6, minmax(0, 1fr))",
+            },
+            gap: { xs: 0.75, sm: 0.75, lg: 0 },
+            p: { xs: 0.75, sm: 0.75, lg: 0 },
+            overflow: "hidden",
+            "& > *": {
+              lg: {
+                "&:not(:last-child)": {
+                  borderRight: "1px solid rgba(255,255,255,0.07)",
+                },
+              },
             },
           }}
         >
@@ -196,13 +219,13 @@ function ShipListPage() {
           <StatItem label="OPERATORS" value={operators.length} />
           <StatItem label="IN VIEW" value={activeCount} accent="#22d3ee" />
           <StatItem
-            label="TRACKED ◢"
+            label="TRACKED"
             value={trackedCount}
             accent={trackedOnly ? "#22d3ee" : undefined}
             active={trackedOnly}
             onClick={() => setTrackedOnly((v) => !v)}
           />
-        </Stack>
+        </Box>
 
         <ShipFiltersBar
           filters={filters}
