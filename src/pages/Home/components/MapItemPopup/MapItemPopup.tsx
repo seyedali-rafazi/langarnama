@@ -1,6 +1,7 @@
 import {
   Anchor,
   Close,
+  Delete,
   DirectionsBoat,
   Explore,
   Sensors,
@@ -62,7 +63,7 @@ function ShipPopupContent({
   ship: Ship;
   onClose: () => void;
 }) {
-  const { addWake, hasWake } = useShips();
+  const { addWake, removeWake, hasWake } = useShips();
   const { getVoyage } = useLiveShipEngine();
   const wakeExists = hasWake(ship.id);
   const typeConfig = SHIP_TYPE_CONFIG[ship.shipType];
@@ -157,16 +158,20 @@ function ShipPopupContent({
           fullWidth
           size="small"
           variant={wakeExists ? "outlined" : "contained"}
-          startIcon={<Timeline />}
-          disabled={wakeExists}
+          color={wakeExists ? "error" : "primary"}
+          startIcon={wakeExists ? <Delete /> : <Timeline />}
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            addWake(ship.id);
+            if (wakeExists) {
+              removeWake(ship.id);
+            } else {
+              addWake(ship.id);
+            }
           }}
           sx={{ mt: 1.25, py: 0.75, fontWeight: 600 }}
         >
-          {wakeExists ? "Wake Drawn" : "Draw Wake"}
+          {wakeExists ? "Delete Wake" : "Draw Wake"}
         </Button>
       </Box>
     </>
