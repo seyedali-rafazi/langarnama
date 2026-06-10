@@ -19,6 +19,9 @@ Real-time-style vessel visualization with color-coded ship types, rich drawing t
 
 ## Overview
 
+**live :** [langarnama.ir](https://www.langarnama.ir/)
+
+
 **Langarnama** ("anchor chronicle") is a dark-themed maritime map application centered on Iranian waters — the Persian Gulf, Strait of Hormuz, Gulf of Oman, and the southern Caspian Sea. It renders a simulated live fleet of ships moving along realistic shipping lanes, alongside ports and coastal stations (VTS, AIS, lighthouses, radar), on top of switchable base maps. A full suite of drawing and measurement tools turns the map into an interactive workspace.
 
 > Ship movement is **simulated client-side** — each vessel advances along predefined waypoints at its service speed using haversine math, animated at ~20 Hz (with a time-scale factor so slow maritime speeds stay visible). No external AIS API is required.
