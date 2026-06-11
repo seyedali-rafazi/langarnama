@@ -15,9 +15,16 @@ html:focus-within {
   scroll-behavior: smooth;
 }
 
-/* 4. Full height layout — 100% width avoids 100vw overflow on mobile */
+/* 4. Full height layout — 100% avoids 100vh/100vw overflow on mobile */
 html,
-body,
+body {
+  height: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 #root {
   height: 100%;
   width: 100%;
