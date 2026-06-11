@@ -162,7 +162,7 @@ export const SidebarProvider = ({ children, config }) => {
 
   return (
     <SidebarContext.Provider value={contextValue}>
-      <Box sx={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden" }}>
+      <Box sx={{ display: "flex", height: "100vh", width: "100%", overflow: "hidden" }}>
         <Box
           sx={{
             width: COLLAPSED_WIDTH,
@@ -170,6 +170,7 @@ export const SidebarProvider = ({ children, config }) => {
             height: "100%",
             position: "relative",
             zIndex: 1400,
+            overflow: "hidden",
           }}
         >
           {/* command rail */}
@@ -263,11 +264,11 @@ export const SidebarProvider = ({ children, config }) => {
           {/* slide-out panel */}
           <Box
             sx={{
-              position: "fixed",
-              left: COLLAPSED_WIDTH,
+              position: "absolute",
+              left: "100%",
               top: 0,
               width: PANEL_WIDTH,
-              height: "100vh",
+              height: "100%",
               zIndex: 1,
               display: "flex",
               flexDirection: "column",

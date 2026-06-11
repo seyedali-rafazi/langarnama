@@ -15,11 +15,13 @@ html:focus-within {
   scroll-behavior: smooth;
 }
 
-/* 4. Full height layout */
+/* 4. Full height layout — 100% width avoids 100vw overflow on mobile */
 html,
 body,
 #root {
   height: 100%;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* 5. Body defaults */
@@ -84,6 +86,7 @@ button {
 /* 12. Root stacking context */
 #root {
   isolation: isolate;
+  overflow: hidden;
 }
 
 /*------------------------------Mapbox------------------------------------------*/
