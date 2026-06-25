@@ -9,7 +9,7 @@ export interface SettingsState {
 
 const initialState: SettingsState = {
   mapStyleId: "balad",
-  shipSize: 30,
+  shipSize: 20,
   showShipLabels: false,
 };
 

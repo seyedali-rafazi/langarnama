@@ -62,9 +62,18 @@ export default function DeckGLOverlay({ layers }: { layers: Layer[] }) {
     };
 
     const handleStyleReady = () => {
-      requestAnimationFrame(() => {
-        ensureOverlay();
-      });
+      // Wait for mapbox to finish repainting tiles before reattaching deck.gl.
+      const refresh = () => {
+        requestAnimationFrame(() => {
+          ensureOverlay();
+        });
+      };
+
+      if (map.isStyleLoaded()) {
+        map.once("idle", refresh);
+      } else {
+        refresh();
+      }
     };
 
     map.on("resize", handleResize);

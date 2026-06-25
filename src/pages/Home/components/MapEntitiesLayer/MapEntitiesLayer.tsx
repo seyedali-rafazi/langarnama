@@ -111,6 +111,7 @@ const MapEntitiesLayer = () => {
           iconSize: shipSize,
           showLabels: showShipLabels,
           pickable,
+          layerKey: mapStyleId,
         })
       );
     }
