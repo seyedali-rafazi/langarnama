@@ -14,6 +14,7 @@ import { useAppSelector } from "../../store/hooks";
 import { getMapStyleUrl } from "../../store/mapStyles";
 import MapFlatViewEnforcer from "./components/MapFlatViewEnforcer/MapFlatViewEnforcer";
 import MapStyleSynchronizer from "./components/MapStyleSynchronizer/MapStyleSynchronizer";
+import MapViewportShipSynchronizer from "./components/MapViewportShipSynchronizer/MapViewportShipSynchronizer";
 import { MapToolProvider } from "./context/MapToolContext";
 import { AccordionGroupProvider } from "../utils/MapTools/AccordionGroupContext";
 import MapShipBadge from "../../pages/Home/components/MapShipBadge/MapShipBadge";
@@ -88,6 +89,7 @@ const LangarnamaMap: FC<LangarnamaMapProps> = ({ children }) => {
         <MapFlatViewEnforcer />
         <MapStyleSynchronizer />
         <MapResizeHandler />
+        <MapViewportShipSynchronizer />
         {/* Native dark shadow layer rendered below the deck.gl overlay */}
         <Source
           id="dark-shadow-source"

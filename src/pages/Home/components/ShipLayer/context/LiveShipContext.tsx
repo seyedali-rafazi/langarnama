@@ -20,7 +20,7 @@ import {
   type VoyageProgress,
 } from "../utils/shipMovement";
 import { useShipsQuery } from "../../../../../hooks/queries/useShipsQuery";
-import { getWebSocketUrl } from "../../../../../services/api";
+import { fetchShips, getWebSocketUrl } from "../../../../../services/api";
 
 export { BASE_SHIPS } from "../data/shipFleet";
 
@@ -28,9 +28,16 @@ type WakePoint = [number, number];
 type Listener = () => void;
 export type StreamState = "connected" | "connecting" | "simulated" | "error";
 
-const BATCH_NOTIFY_INTERVAL_MS = 400;
-const MAX_FLEET_CAPACITY = 2500;
-const STALE_VESSEL_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours
+export interface ViewportBounds {
+  lamin: number;
+  lomin: number;
+  lamax: number;
+  lomax: number;
+}
+
+const BATCH_NOTIFY_INTERVAL_MS = 350;
+const MAX_FLEET_CAPACITY = 3500;
+const STALE_VESSEL_TIMEOUT_MS = 3 * 60 * 60 * 1000; // 3 hours
 
 interface LiveShipContextValue {
   getShipById: (id: string) => Ship | null;
@@ -42,6 +49,7 @@ interface LiveShipContextValue {
   streamState: StreamState;
   liveMessageCount: number;
   isLiveStream: boolean;
+  setViewportBounds: (bounds: ViewportBounds) => void;
 }
 
 const LiveShipContext = createContext<LiveShipContextValue | null>(null);
@@ -58,7 +66,7 @@ function mapAisTypeToShipType(typeCode?: number | string | null): ShipType {
   return "cargo";
 }
 
-/** Validates and normalizes heading (AIS uses 511 for 'not available') */
+/** Validates and normalizes heading (AIS standard uses 511 for 'not available') */
 function normalizeHeading(
   trueHdg?: number | null,
   cog?: number | null,
@@ -93,6 +101,11 @@ export function LiveShipProvider({
   const messageCounterRef = useRef<number>(0);
   const dirtyRef = useRef<boolean>(false);
   const throttleTimerRef = useRef<number | null>(null);
+
+  const backendWsRef = useRef<WebSocket | null>(null);
+  const aisWsRef = useRef<WebSocket | null>(null);
+  const viewportBoundsRef = useRef<ViewportBounds | null>(null);
+  const viewportFetchAbortRef = useRef<AbortController | null>(null);
 
   // Initialize baseline ships
   if (baseFleetMapRef.current.size === 0) {
@@ -169,7 +182,7 @@ export function LiveShipProvider({
     }, BATCH_NOTIFY_INTERVAL_MS);
   }, [rebuildCombinedSnapshot]);
 
-  // Gentle memory cleanup for truly stale vessels (older than 2 hours)
+  // Gentle memory cleanup for truly stale vessels (older than 3 hours)
   const pruneStaleVessels = useCallback(() => {
     if (liveFleetMapRef.current.size > MAX_FLEET_CAPACITY) {
       const now = Date.now();
@@ -201,21 +214,25 @@ export function LiveShipProvider({
 
   // 1. Backend WebSocket Connection (`/api/v1/ws/live`)
   useEffect(() => {
-    let ws: WebSocket | null = null;
     let isCleanedUp = false;
     let fallbackToDirect = false;
 
     const connectBackendWs = () => {
       try {
         const wsUrl = getWebSocketUrl();
-        ws = new WebSocket(wsUrl);
+        const ws = new WebSocket(wsUrl);
+        backendWsRef.current = ws;
 
         ws.onopen = () => {
           if (isCleanedUp) {
-            ws?.close();
+            ws.close();
             return;
           }
           setStreamState("connected");
+          // If we have active viewport bounds, send them immediately
+          if (viewportBoundsRef.current) {
+            ws.send(JSON.stringify(viewportBoundsRef.current));
+          }
         };
 
         ws.onmessage = (e) => {
@@ -258,7 +275,10 @@ export function LiveShipProvider({
 
     return () => {
       isCleanedUp = true;
-      if (ws) ws.close();
+      if (backendWsRef.current) {
+        backendWsRef.current.close();
+        backendWsRef.current = null;
+      }
     };
   }, [pruneStaleVessels, scheduleBatchedNotify]);
 
@@ -270,7 +290,6 @@ export function LiveShipProvider({
 
     if (!aisApiKey) return;
 
-    let ws: WebSocket | null = null;
     let reconnectTimeout: number | null = null;
     let isCleanedUp = false;
 
@@ -278,22 +297,30 @@ export function LiveShipProvider({
       if (isCleanedUp) return;
 
       try {
-        ws = new WebSocket("wss://stream.aisstream.io/v0/stream");
+        const ws = new WebSocket("wss://stream.aisstream.io/v0/stream");
+        aisWsRef.current = ws;
 
         ws.onopen = () => {
           if (isCleanedUp) {
-            ws?.close();
+            ws.close();
             return;
           }
           setStreamState("connected");
 
+          const boundingBoxes: [[[number, number], [number, number]]] = [
+            [[22.0, 48.0], [32.0, 62.0]], // Persian Gulf & Oman Sea
+            [[36.0, 48.0], [42.0, 55.0]], // Caspian Sea
+            [[-90.0, -180.0], [90.0, 180.0]], // Global
+          ];
+
+          if (viewportBoundsRef.current) {
+            const vb = viewportBoundsRef.current;
+            boundingBoxes.unshift([[vb.lamin, vb.lomin], [vb.lamax, vb.lomax]]);
+          }
+
           const subscriptionPayload = {
             APIKey: aisApiKey,
-            BoundingBoxes: [
-              [[22.0, 48.0], [32.0, 62.0]], // Persian Gulf & Oman Sea
-              [[36.0, 48.0], [42.0, 55.0]], // Caspian Sea
-              [[-90.0, -180.0], [90.0, 180.0]], // Global
-            ],
+            BoundingBoxes: boundingBoxes,
             FilterMessageTypes: [
               "PositionReport",
               "StandardClassBPositionReport",
@@ -301,7 +328,7 @@ export function LiveShipProvider({
               "ExtendedClassBPositionReport",
             ],
           };
-          ws?.send(JSON.stringify(subscriptionPayload));
+          ws.send(JSON.stringify(subscriptionPayload));
         };
 
         ws.onmessage = (event) => {
@@ -483,13 +510,49 @@ export function LiveShipProvider({
       isCleanedUp = true;
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
       if (throttleTimerRef.current) clearTimeout(throttleTimerRef.current);
-      if (ws) {
-        ws.onclose = null;
-        ws.onerror = null;
-        ws.close();
+      if (aisWsRef.current) {
+        aisWsRef.current.onclose = null;
+        aisWsRef.current.onerror = null;
+        aisWsRef.current.close();
+        aisWsRef.current = null;
       }
     };
   }, [pruneStaleVessels, scheduleBatchedNotify]);
+
+  // Synchronize viewport bounds to fetch all vessels in the active viewing area
+  const setViewportBounds = useCallback(
+    (bounds: ViewportBounds) => {
+      viewportBoundsRef.current = bounds;
+
+      // 1. If backend WebSocket is connected, push bounds to receive immediate viewport batch
+      if (backendWsRef.current?.readyState === WebSocket.OPEN) {
+        backendWsRef.current.send(JSON.stringify(bounds));
+      }
+
+      // 2. Fetch immediate viewport snapshot from backend API
+      if (viewportFetchAbortRef.current) {
+        viewportFetchAbortRef.current.abort();
+      }
+      const abortCtrl = new AbortController();
+      viewportFetchAbortRef.current = abortCtrl;
+
+      fetchShips(bounds, abortCtrl.signal)
+        .then((res) => {
+          if (res?.ships && Array.isArray(res.ships)) {
+            for (const item of res.ships) {
+              if (item.is_live) {
+                liveFleetMapRef.current.set(item.id, item);
+              }
+            }
+            scheduleBatchedNotify();
+          }
+        })
+        .catch(() => {
+          // Ignore aborted requests
+        });
+    },
+    [scheduleBatchedNotify]
+  );
 
   // Simulation tick loop for baseline ships (runs at 2.5 FPS / 400ms)
   useEffect(() => {
@@ -582,6 +645,7 @@ export function LiveShipProvider({
       streamState,
       liveMessageCount,
       isLiveStream,
+      setViewportBounds,
     }),
     [
       getShipById,
@@ -593,6 +657,7 @@ export function LiveShipProvider({
       streamState,
       liveMessageCount,
       isLiveStream,
+      setViewportBounds,
     ]
   );
 

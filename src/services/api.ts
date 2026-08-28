@@ -97,13 +97,22 @@ export function getApiUrl(endpointPath: string): string {
 }
 
 /**
- * Helper to execute JSON HTTP requests with error parsing.
+ * Helper to execute JSON HTTP requests with error parsing and Vercel 304 / caching prevention.
  */
 async function fetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(url, {
-    headers: { Accept: "application/json" },
+    headers: {
+      Accept: "application/json",
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+    },
+    cache: "no-store",
     signal,
   });
+
+  if (response.status === 304) {
+    return {} as T;
+  }
 
   if (!response.ok) {
     let errorText = response.statusText;
@@ -118,7 +127,12 @@ async function fetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
     throw new Error(`API Error [${response.status}]: ${errorText}`);
   }
 
-  return response.json();
+  const text = await response.text();
+  if (!text || text.trim() === "") {
+    return {} as T;
+  }
+
+  return JSON.parse(text);
 }
 
 export async function fetchShips(
