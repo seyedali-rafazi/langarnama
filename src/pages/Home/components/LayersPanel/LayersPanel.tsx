@@ -12,7 +12,6 @@ import {
   Divider,
   IconButton,
   InputAdornment,
-  List,
   ListItemButton,
   ListItemText,
   Stack,
@@ -22,7 +21,8 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useRef, type ReactNode } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { SHIP_TYPE_CONFIG, type Ship } from "../ShipLayer/types/Ship";
 import type { Port } from "../PortLayer/types/Port";
 import type { CoastalStation } from "../StationLayer/types/CoastalStation";
@@ -90,6 +90,8 @@ export default function LayersPanel() {
     getEntityData,
   } = useMapLayers();
 
+  const parentRef = useRef<HTMLDivElement>(null);
+
   const items = useMemo(() => {
     const data =
       activeCategory === "ships"
@@ -101,6 +103,13 @@ export default function LayersPanel() {
       matchesSearch(activeCategory, item, searchQuery[activeCategory])
     );
   }, [activeCategory, ships, ports, stations, searchQuery]);
+
+  const rowVirtualizer = useVirtualizer({
+    count: items.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 54,
+    overscan: 6,
+  });
 
   const visibleCount = items.filter((item) =>
     isItemVisible(activeCategory, item.id)
@@ -187,84 +196,117 @@ export default function LayersPanel() {
         sx={{ mb: 1.5 }}
       />
 
-      <List
-        disablePadding
+      <Box
+        ref={parentRef}
         sx={{
           flex: 1,
           minHeight: 0,
           overflowY: "auto",
           overflowX: "hidden",
+          position: "relative",
           mb: selectedData ? 1 : 0,
         }}
       >
-        {items.map((item) => {
-          const { primary, secondary } = getItemLabel(activeCategory, item);
-          const visible = isItemVisible(activeCategory, item.id);
-          const isSelected =
-            selectedEntity?.category === activeCategory &&
-            selectedEntity?.id === item.id;
-          const typeColor =
-            activeCategory === "ships"
-              ? SHIP_TYPE_CONFIG[(item as Ship).shipType].color
-              : null;
+        {items.length === 0 ? (
+          <Box sx={{ py: 4, textAlign: "center" }}>
+            <Typography variant="caption" color="text.secondary">
+              No {CATEGORY_CONFIG[activeCategory].label.toLowerCase()} match your search
+            </Typography>
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+              width: "100%",
+              position: "relative",
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const item = items[virtualRow.index];
+              if (!item) return null;
 
-          return (
-            <ListItemButton
-              key={item.id}
-              selected={isSelected}
-              onClick={() => selectEntity(activeCategory, item.id)}
-              sx={{
-                borderRadius: 1.5,
-                mb: 0.5,
-                opacity: visible ? 1 : 0.45,
-                border: "1px solid",
-                borderColor: isSelected ? "primary.main" : "transparent",
-              }}
-            >
-              {typeColor && (
+              const { primary, secondary } = getItemLabel(activeCategory, item);
+              const visible = isItemVisible(activeCategory, item.id);
+              const isSelected =
+                selectedEntity?.category === activeCategory &&
+                selectedEntity?.id === item.id;
+              const typeColor =
+                activeCategory === "ships"
+                  ? SHIP_TYPE_CONFIG[(item as Ship).shipType].color
+                  : null;
+
+              return (
                 <Box
+                  key={item.id}
+                  data-index={virtualRow.index}
+                  ref={rowVirtualizer.measureElement}
                   sx={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    bgcolor: typeColor,
-                    mr: 1,
-                    flexShrink: 0,
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    transform: `translateY(${virtualRow.start}px)`,
+                    px: 0.25,
+                    pb: 0.5,
                   }}
-                />
-              )}
-              <ListItemText
-                primary={
-                  <Typography variant="body2" fontWeight={600} noWrap>
-                    {primary}
-                  </Typography>
-                }
-                secondary={
-                  <Typography variant="caption" color="text.secondary" noWrap>
-                    {secondary}
-                  </Typography>
-                }
-                sx={{ pr: 1 }}
-              />
-              <IconButton
-                size="small"
-                edge="end"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleItemVisibility(activeCategory, item.id);
-                }}
-                sx={{ color: visible ? "primary.main" : "text.secondary" }}
-              >
-                {visible ? (
-                  <Visibility fontSize="small" />
-                ) : (
-                  <VisibilityOff fontSize="small" />
-                )}
-              </IconButton>
-            </ListItemButton>
-          );
-        })}
-      </List>
+                >
+                  <ListItemButton
+                    selected={isSelected}
+                    onClick={() => selectEntity(activeCategory, item.id)}
+                    sx={{
+                      borderRadius: 1.5,
+                      opacity: visible ? 1 : 0.45,
+                      border: "1px solid",
+                      borderColor: isSelected ? "primary.main" : "transparent",
+                    }}
+                  >
+                    {typeColor && (
+                      <Box
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: "50%",
+                          bgcolor: typeColor,
+                          mr: 1,
+                          flexShrink: 0,
+                        }}
+                      />
+                    )}
+                    <ListItemText
+                      primary={
+                        <Typography variant="body2" fontWeight={600} noWrap>
+                          {primary}
+                        </Typography>
+                      }
+                      secondary={
+                        <Typography variant="caption" color="text.secondary" noWrap>
+                          {secondary}
+                        </Typography>
+                      }
+                      sx={{ pr: 1 }}
+                    />
+                    <IconButton
+                      size="small"
+                      edge="end"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleItemVisibility(activeCategory, item.id);
+                      }}
+                      sx={{ color: visible ? "primary.main" : "text.secondary" }}
+                    >
+                      {visible ? (
+                        <Visibility fontSize="small" />
+                      ) : (
+                        <VisibilityOff fontSize="small" />
+                      )}
+                    </IconButton>
+                  </ListItemButton>
+                </Box>
+              );
+            })}
+          </Box>
+        )}
+      </Box>
 
       {selectedData && selectedEntity && (
         <>

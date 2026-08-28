@@ -1,6 +1,7 @@
 import { PushPin, SearchOff } from "@mui/icons-material";
-import { Box, Grid, Stack, Typography } from "@mui/material";
-import { memo, useMemo, useState } from "react";
+import { Box, Grid, Stack, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { memo, useMemo, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import shipData from "../Home/components/ShipLayer/data/iran_ships.json";
 import type { Ship } from "../Home/components/ShipLayer/types/Ship";
 import ShipCard from "./components/ShipCard";
@@ -96,6 +97,15 @@ function ShipListPage() {
   const [trackedOnly, setTrackedOnly] = useState(false);
   const { trackedIds, trackedCount } = useWatchlist();
 
+  const theme = useTheme();
+  const isLg = useMediaQuery(theme.breakpoints.up("lg"));
+  const isMd = useMediaQuery(theme.breakpoints.up("md"));
+  const isSm = useMediaQuery(theme.breakpoints.up("sm"));
+
+  const columns = isLg ? 4 : isMd ? 3 : isSm ? 2 : 1;
+
+  const parentRef = useRef<HTMLDivElement>(null);
+
   const allShips = useMemo(() => {
     return shipsResponse?.ships && shipsResponse.ships.length > 0
       ? shipsResponse.ships
@@ -127,11 +137,28 @@ function ShipListPage() {
 
   const activeCount = displayedShips.length;
 
+  const shipRows = useMemo(() => {
+    const rows: Ship[][] = [];
+    for (let i = 0; i < displayedShips.length; i += columns) {
+      rows.push(displayedShips.slice(i, i + columns));
+    }
+    return rows;
+  }, [displayedShips, columns]);
+
+  const rowVirtualizer = useVirtualizer({
+    count: shipRows.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 280,
+    overscan: 2,
+  });
+
   return (
     <Box
+      ref={parentRef}
       sx={{
         height: "100%",
-        overflow: "auto",
+        overflowY: "auto",
+        overflowX: "hidden",
         bgcolor: "#0b1014",
         backgroundImage:
           "linear-gradient(rgba(34,211,238,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.025) 1px, transparent 1px)",
@@ -292,13 +319,42 @@ function ShipListPage() {
             )}
           </Box>
         ) : (
-          <Grid container spacing={2}>
-            {displayedShips.map((ship) => (
-              <Grid key={ship.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-                <ShipCard ship={ship} />
-              </Grid>
-            ))}
-          </Grid>
+          <Box
+            sx={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+              width: "100%",
+              position: "relative",
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const row = shipRows[virtualRow.index];
+              if (!row) return null;
+
+              return (
+                <Box
+                  key={virtualRow.key}
+                  data-index={virtualRow.index}
+                  ref={rowVirtualizer.measureElement}
+                  sx={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    transform: `translateY(${virtualRow.start}px)`,
+                    pb: 2,
+                  }}
+                >
+                  <Grid container spacing={2}>
+                    {row.map((ship) => (
+                      <Grid key={ship.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+                        <ShipCard ship={ship} />
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Box>
+              );
+            })}
+          </Box>
         )}
 
         {/* console footer */}
