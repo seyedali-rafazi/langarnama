@@ -32,10 +32,16 @@ export const BASELINE_STATIONS_RESPONSE: StationListResponse = {
 export function usePortsQuery() {
   return useQuery<PortListResponse>({
     queryKey: queryKeys.ports.list(),
-    queryFn: ({ signal }) => fetchPorts(signal),
+    queryFn: async ({ signal }) => {
+      try {
+        return await fetchPorts(signal);
+      } catch {
+        return BASELINE_PORTS_RESPONSE;
+      }
+    },
     placeholderData: BASELINE_PORTS_RESPONSE,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 }
 
@@ -49,7 +55,14 @@ export function usePortDetailQuery(codeOrId?: string | null) {
 
   return useQuery<Port>({
     queryKey: queryKeys.ports.detail(codeOrId || ""),
-    queryFn: ({ signal }) => fetchPortDetail(codeOrId!, signal),
+    queryFn: async ({ signal }) => {
+      try {
+        return await fetchPortDetail(codeOrId!, signal);
+      } catch {
+        if (fallback) return fallback;
+        throw new Error("Port not found");
+      }
+    },
     enabled: Boolean(codeOrId),
     placeholderData: fallback,
     staleTime: 10 * 60 * 1000,
@@ -62,7 +75,13 @@ export function usePortDetailQuery(codeOrId?: string | null) {
 export function useStationsQuery() {
   return useQuery<StationListResponse>({
     queryKey: queryKeys.stations.list(),
-    queryFn: ({ signal }) => fetchStations(signal),
+    queryFn: async ({ signal }) => {
+      try {
+        return await fetchStations(signal);
+      } catch {
+        return BASELINE_STATIONS_RESPONSE;
+      }
+    },
     placeholderData: BASELINE_STATIONS_RESPONSE,
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,

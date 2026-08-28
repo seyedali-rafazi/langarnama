@@ -127,9 +127,16 @@ async function fetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
     throw new Error(`API Error [${response.status}]: ${errorText}`);
   }
 
+  const contentType = response.headers.get("content-type") || "";
   const text = await response.text();
+
   if (!text || text.trim() === "") {
     return {} as T;
+  }
+
+  // Detect when Vercel rewrites a missing backend /api route to index.html
+  if (text.trim().startsWith("<") || contentType.includes("text/html")) {
+    throw new Error(`API returned HTML instead of JSON for ${url} (backend not deployed on this domain)`);
   }
 
   return JSON.parse(text);

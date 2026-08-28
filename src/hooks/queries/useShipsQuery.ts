@@ -23,13 +23,17 @@ export const BASELINE_SHIP_RESPONSE: ShipListResponse = {
   cached: true,
 };
 
-/**
- * React Query hook to fetch vessels matching spatial and attribute filters.
- */
 export function useShipsQuery(params?: ShipFilterParams) {
   return useQuery<ShipListResponse>({
     queryKey: queryKeys.ships.list(params),
-    queryFn: ({ signal }) => fetchShips(params, signal),
+    queryFn: async ({ signal }) => {
+      try {
+        return await fetchShips(params, signal);
+      } catch (err) {
+        // Fallback to baseline ships when backend API is offline or on static Vercel host
+        return BASELINE_SHIP_RESPONSE;
+      }
+    },
     placeholderData: !params || Object.keys(params).length === 0 ? BASELINE_SHIP_RESPONSE : undefined,
     staleTime: 5_000,
     refetchInterval: 10_000,
