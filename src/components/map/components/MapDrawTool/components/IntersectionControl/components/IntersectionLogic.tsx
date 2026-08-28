@@ -1,6 +1,6 @@
 // src/components/ExpandableToolbar/components/DrawLineControl/components/LineDrawLogic.jsx
 import { useEffect, useRef } from "react";
-import { useMap } from "react-map-gl/mapbox";
+import { useMap } from "react-map-gl/maplibre";
 
 // Helper to check intersection of two line segments (p1-p2 and p3-p4)
 const getIntersection = (p1, p2, p3, p4) => {
@@ -103,7 +103,7 @@ const IntersectionLogic = ({ isLineMode, setIsLineMode }) => {
   }, [map]);
 
   useEffect(() => {
-    if (!map) return;
+    if (!map || !isLineMode) return;
 
     const updateMapData = () => {
       const lineSource = map.getSource("custom-line-source");
@@ -132,7 +132,7 @@ const IntersectionLogic = ({ isLineMode, setIsLineMode }) => {
       }
     };
 
-    const handlePointerDown = (e) => {
+    const handlePointerDown = (e: any) => {
       if (!isLineMode || !e.lngLat) return;
       e.preventDefault();
 
@@ -160,7 +160,7 @@ const IntersectionLogic = ({ isLineMode, setIsLineMode }) => {
       updateMapData();
     };
 
-    const handlePointerMove = (e) => {
+    const handlePointerMove = (e: any) => {
       if (!e.lngLat || interactionRef.current.mode !== "drawing") return;
 
       const activeLine = lineDataRef.current.find(
@@ -176,7 +176,7 @@ const IntersectionLogic = ({ isLineMode, setIsLineMode }) => {
     };
 
     // Use double click or right click to finish drawing the line
-    const handleContextMenu = (e) => {
+    const handleContextMenu = (e: any) => {
       if (interactionRef.current.mode === "drawing") {
         e.preventDefault();
         interactionRef.current = { mode: null };
@@ -186,6 +186,8 @@ const IntersectionLogic = ({ isLineMode, setIsLineMode }) => {
       }
     };
 
+    map.getCanvas().style.cursor = "crosshair";
+
     // Bind Events
     map.on("mousedown", handlePointerDown);
     map.on("mousemove", handlePointerMove);
@@ -193,6 +195,8 @@ const IntersectionLogic = ({ isLineMode, setIsLineMode }) => {
     map.on("dblclick", handleContextMenu); // Double click to finish
 
     return () => {
+      map.getCanvas().style.cursor = "";
+      map.dragPan.enable();
       map.off("mousedown", handlePointerDown);
       map.off("mousemove", handlePointerMove);
       map.off("contextmenu", handleContextMenu);

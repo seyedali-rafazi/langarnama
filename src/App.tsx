@@ -11,12 +11,15 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Provider } from "react-redux";
 import { Toaster } from "sonner";
 import { store } from "./store";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./services/queryClient";
 import SettingsPanel from "./pages/Settings/SettingsPanel";
 import AppShell from "./components/layout/AppShell";
 import WaveLoader from "./components/utils/Loading/WaveLoader";
 import { SidebarProvider } from "./components/utils/Sidebar/SidebarProvider";
 import WakesPanel from "./pages/Home/components/ShipLayer/components/WakesPanel/WakesPanel";
 import { ShipProvider } from "./pages/Home/components/ShipLayer/context/ShipContext";
+import { LiveShipProvider } from "./pages/Home/components/ShipLayer/context/LiveShipContext";
 import LayersPanel from "./pages/Home/components/LayersPanel/LayersPanel";
 import { MapLayersProvider } from "./pages/Home/context/MapLayersContext";
 import { WatchlistProvider } from "./pages/Ship/context/WatchlistContext";
@@ -97,35 +100,39 @@ export default function App() {
       <CssBaseline />
       <ThemeProvider theme={theme}>
         <Provider store={store}>
-          <ShipProvider>
-            <MapLayersProvider>
-              <WatchlistProvider>
-                <SidebarProvider config={sidebarConfig}>
-                  <Routes>
-                    <Route element={<AppShell />}>
-                      <Route index element={null} />
-                      <Route
-                        path="ship"
-                        element={
-                          <Suspense fallback={<WaveLoader label="LOADING REGISTRY" />}>
-                            <ShipListPage />
-                          </Suspense>
-                        }
-                      />
-                      <Route
-                        path="ship/:id"
-                        element={
-                          <Suspense fallback={<WaveLoader label="RETRIEVING VESSEL" />}>
-                            <ShipDetailPage />
-                          </Suspense>
-                        }
-                      />
-                    </Route>
-                  </Routes>
-                </SidebarProvider>
-              </WatchlistProvider>
-            </MapLayersProvider>
-          </ShipProvider>
+          <QueryClientProvider client={queryClient}>
+            <LiveShipProvider>
+              <ShipProvider>
+                <MapLayersProvider>
+                  <WatchlistProvider>
+                    <SidebarProvider config={sidebarConfig}>
+                      <Routes>
+                        <Route element={<AppShell />}>
+                          <Route index element={null} />
+                          <Route
+                            path="ship"
+                            element={
+                              <Suspense fallback={<WaveLoader label="LOADING REGISTRY" />}>
+                                <ShipListPage />
+                              </Suspense>
+                            }
+                          />
+                          <Route
+                            path="ship/:id"
+                            element={
+                              <Suspense fallback={<WaveLoader label="RETRIEVING VESSEL" />}>
+                                <ShipDetailPage />
+                              </Suspense>
+                            }
+                          />
+                        </Route>
+                      </Routes>
+                    </SidebarProvider>
+                  </WatchlistProvider>
+                </MapLayersProvider>
+              </ShipProvider>
+            </LiveShipProvider>
+          </QueryClientProvider>
         </Provider>
       </ThemeProvider>
     </BrowserRouter>

@@ -8,10 +8,8 @@ import {
 import { createShipIconLayer } from "../ShipLayer/layers/createShipLayer";
 import { createWakePathLayer } from "../ShipLayer/layers/createWakePathLayer";
 import type { Ship } from "../ShipLayer/types/Ship";
-import portData from "../PortLayer/data/iran_ports.json";
 import { createPortLayer } from "../PortLayer/layers/createPortLayer";
 import type { Port } from "../PortLayer/types/Port";
-import stationData from "../StationLayer/data/iran_coastal_stations.json";
 import { createStationLayer } from "../StationLayer/layers/createStationLayer";
 import type { CoastalStation } from "../StationLayer/types/CoastalStation";
 import { useMapLayers } from "../../context/MapLayersContext";
@@ -23,7 +21,7 @@ import {
 } from "../../../../components/map/context/MapToolContext";
 
 const MapEntitiesLayer = () => {
-  const { isItemVisible, isShipVisible, selectEntity } = useMapLayers();
+  const { isItemVisible, isShipVisible, selectEntity, ports, stations } = useMapLayers();
   const { wakes } = useShips();
   const liveShips = useLiveShipSnapshot();
   const { getWakePath } = useLiveShipEngine();
@@ -40,16 +38,13 @@ const MapEntitiesLayer = () => {
   );
 
   const visiblePorts = useMemo(
-    () => (portData as Port[]).filter((p) => isItemVisible("ports", p.id)),
-    [isItemVisible]
+    () => ports.filter((p) => isItemVisible("ports", p.id)),
+    [ports, isItemVisible]
   );
 
   const visibleStations = useMemo(
-    () =>
-      (stationData as CoastalStation[]).filter((s) =>
-        isItemVisible("stations", s.id)
-      ),
-    [isItemVisible]
+    () => stations.filter((s) => isItemVisible("stations", s.id)),
+    [stations, isItemVisible]
   );
 
   const handleShipClick = useCallback(
@@ -72,6 +67,24 @@ const MapEntitiesLayer = () => {
     [wakes]
   );
 
+  const portLayer = useMemo(() => {
+    if (visiblePorts.length === 0) return null;
+    return createPortLayer(visiblePorts, {
+      onPortClick: handlePortClick,
+      onPortHover: handleHover,
+      pickable,
+    });
+  }, [visiblePorts, handlePortClick, handleHover, pickable]);
+
+  const stationLayer = useMemo(() => {
+    if (visibleStations.length === 0) return null;
+    return createStationLayer(visibleStations, {
+      onStationClick: handleStationClick,
+      onStationHover: handleHover,
+      pickable,
+    });
+  }, [visibleStations, handleStationClick, handleHover, pickable]);
+
   const layers = useMemo(() => {
     const result = [];
 
@@ -83,24 +96,12 @@ const MapEntitiesLayer = () => {
       }
     });
 
-    if (visiblePorts.length > 0) {
-      result.push(
-        createPortLayer(visiblePorts, {
-          onPortClick: handlePortClick,
-          onPortHover: handleHover,
-          pickable,
-        })
-      );
+    if (portLayer) {
+      result.push(portLayer);
     }
 
-    if (visibleStations.length > 0) {
-      result.push(
-        createStationLayer(visibleStations, {
-          onStationClick: handleStationClick,
-          onStationHover: handleHover,
-          pickable,
-        })
-      );
+    if (stationLayer) {
+      result.push(stationLayer);
     }
 
     if (visibleShips.length > 0) {
@@ -121,16 +122,15 @@ const MapEntitiesLayer = () => {
     visibleWakes,
     liveShips,
     getWakePath,
+    portLayer,
+    stationLayer,
     visibleShips,
-    visiblePorts,
-    visibleStations,
     handleShipClick,
-    handlePortClick,
-    handleStationClick,
     handleHover,
     shipSize,
     showShipLabels,
     pickable,
+    mapStyleId,
   ]);
 
   return <DeckGLOverlay key={mapStyleId} layers={layers} />;

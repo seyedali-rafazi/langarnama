@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useMap } from "react-map-gl/mapbox";
+import { useMap } from "react-map-gl/maplibre";
 
 /** Keeps the map flat (rectangular mercator) — no globe or 3D tilt. */
 export default function MapFlatViewEnforcer() {
@@ -7,26 +7,44 @@ export default function MapFlatViewEnforcer() {
 
   useEffect(() => {
     const map = current?.getMap();
-    if (!map) return;
+    if (!map || (map as { _removed?: boolean })._removed) return;
 
     const enforceFlatView = () => {
+      if ((map as { _removed?: boolean })._removed) return;
+
       try {
-        map.setProjection("mercator");
+        if (typeof (map as any).setProjection === "function") {
+          (map as any).setProjection({ type: "mercator" });
+        }
       } catch {
-        // Projection API may vary between mapbox-gl versions.
+        // Projection API fallback
       }
 
-      map.setPitch(0);
-      map.setBearing(0);
-      map.dragRotate.disable();
-      map.touchPitch?.disable();
+      try {
+        if (map.getPitch() !== 0) {
+          map.setPitch(0);
+        }
+        if (map.getBearing() !== 0) {
+          map.setBearing(0);
+        }
+        if (map.dragRotate?.isEnabled()) {
+          map.dragRotate.disable();
+        }
+        if (map.touchPitch?.isEnabled()) {
+          map.touchPitch.disable();
+        }
+      } catch {
+        // Safe guard during initial layout
+      }
     };
 
-    enforceFlatView();
-    map.on("style.load", enforceFlatView);
+    if (map.isStyleLoaded()) {
+      enforceFlatView();
+    }
+    map.on("styledata", enforceFlatView);
 
     return () => {
-      map.off("style.load", enforceFlatView);
+      map.off("styledata", enforceFlatView);
     };
   }, [current]);
 

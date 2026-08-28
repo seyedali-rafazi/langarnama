@@ -6,6 +6,7 @@ import type { Ship } from "../Home/components/ShipLayer/types/Ship";
 import ShipCard from "./components/ShipCard";
 import ShipFiltersBar from "./components/ShipFiltersBar";
 import { useWatchlist } from "./context/WatchlistContext";
+import { useShipsQuery } from "../../hooks/queries/useShipsQuery";
 import {
   DEFAULT_FILTERS,
   filterShips,
@@ -19,15 +20,7 @@ import {
 
 const MONO = '"JetBrains Mono", "Cascadia Code", "Roboto Mono", monospace';
 
-const allShips = shipData as Ship[];
-const operators = getUniqueOperators(allShips);
-const shipTypes = getUniqueTypes(allShips);
-
-const underwayCount = allShips.filter((s) => s.speed_kts >= 0.5).length;
-const avgSpeed =
-  Math.round(
-    (allShips.reduce((sum, s) => sum + s.speed_kts, 0) / allShips.length) * 10
-  ) / 10;
+const BASELINE_SHIPS = shipData as Ship[];
 
 interface StatItemProps {
   label: string;
@@ -96,11 +89,33 @@ function StatItem({ label, value, accent, active, onClick }: StatItemProps) {
 }
 
 function ShipListPage() {
+  const { data: shipsResponse } = useShipsQuery();
   const [filters, setFilters] = useState<ShipFilters>(DEFAULT_FILTERS);
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [trackedOnly, setTrackedOnly] = useState(false);
   const { trackedIds, trackedCount } = useWatchlist();
+
+  const allShips = useMemo(() => {
+    return shipsResponse?.ships && shipsResponse.ships.length > 0
+      ? shipsResponse.ships
+      : BASELINE_SHIPS;
+  }, [shipsResponse]);
+
+  const operators = useMemo(() => getUniqueOperators(allShips), [allShips]);
+  const shipTypes = useMemo(() => getUniqueTypes(allShips), [allShips]);
+
+  const underwayCount = useMemo(
+    () => allShips.filter((s) => s.speed_kts >= 0.5).length,
+    [allShips]
+  );
+  const avgSpeed = useMemo(
+    () =>
+      allShips.length > 0
+        ? Math.round((allShips.reduce((sum, s) => sum + s.speed_kts, 0) / allShips.length) * 10) / 10
+        : 0,
+    [allShips]
+  );
 
   const displayedShips = useMemo(() => {
     let filtered = filterShips(allShips, filters);
@@ -108,7 +123,7 @@ function ShipListPage() {
       filtered = filtered.filter((s) => trackedIds.includes(s.id));
     }
     return sortShips(filtered, sortField, sortDirection);
-  }, [filters, sortField, sortDirection, trackedOnly, trackedIds]);
+  }, [allShips, filters, sortField, sortDirection, trackedOnly, trackedIds]);
 
   const activeCount = displayedShips.length;
 

@@ -1,7 +1,7 @@
 import { DirectionsBoat } from "@mui/icons-material";
 import { Paper, Tooltip, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
-import { useMap } from "react-map-gl/mapbox";
+import { useMap } from "react-map-gl/maplibre";
 import { useLiveShipEngine } from "../ShipLayer/context/LiveShipContext";
 import { useMapLayers } from "../../context/MapLayersContext";
 
@@ -28,14 +28,13 @@ export default function MapShipBadge() {
     };
 
     recompute();
-    // `move` keeps it accurate while panning/zooming; the interval catches
-    // ships drifting in/out of view while the map sits still.
+    // Update on moveend when panning completes and periodically every second
     const interval = window.setInterval(recompute, 1000);
-    map.on("move", recompute);
+    map.on("moveend", recompute);
 
     return () => {
       window.clearInterval(interval);
-      map.off("move", recompute);
+      map.off("moveend", recompute);
     };
   }, [mapRef, getSnapshot, isShipVisible]);
 

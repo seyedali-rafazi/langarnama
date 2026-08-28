@@ -1,12 +1,11 @@
 import { Box } from "@mui/material";
 import { useRef } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import { LiveShipProvider } from "../../pages/Home/components/ShipLayer/context/LiveShipContext";
 import HomePage from "../../pages/Home/Home";
 
 /**
  * Keeps the map mounted but paused when on other routes.
- * Destroying Mapbox + DeckGL on every navigation blocks the main thread for seconds.
+ * Destroying MapLibre + DeckGL on every navigation blocks the main thread for seconds.
  */
 export default function AppShell() {
   const location = useLocation();
@@ -28,9 +27,7 @@ export default function AppShell() {
             pointerEvents: isHome ? "auto" : "none",
           }}
         >
-          <LiveShipProvider active={isHome}>
-            <HomePage mapActive={isHome} />
-          </LiveShipProvider>
+          <HomePage mapActive={isHome} />
         </Box>
       )}
 

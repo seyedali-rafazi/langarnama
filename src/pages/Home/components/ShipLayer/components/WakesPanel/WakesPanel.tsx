@@ -8,21 +8,21 @@ import {
   Typography,
 } from "@mui/material";
 import { useMemo } from "react";
-import { BASE_SHIPS } from "../../data/shipFleet";
 import { SHIP_TYPE_CONFIG } from "../../types/Ship";
 import { useShips } from "../../context/ShipContext";
+import { useLiveShipEngine } from "../../context/LiveShipContext";
 
 export default function WakesPanel() {
   const { wakes, toggleWakeVisibility, removeWake } = useShips();
-  const data = BASE_SHIPS;
+  const { getShipById } = useLiveShipEngine();
 
   const wakeItems = useMemo(
     () =>
       wakes.map((wake) => {
-        const ship = data.find((s) => s.id === wake.shipId);
+        const ship = getShipById(wake.shipId);
         return { wake, ship };
       }),
-    [wakes, data]
+    [wakes, getShipById]
   );
 
   if (wakes.length === 0) {

@@ -1,10 +1,8 @@
-// src/components/ZoomControl.jsx
-import { useMap } from "react-map-gl/mapbox";
+// src/components/ZoomControl.tsx
+import { useMap } from "react-map-gl/maplibre";
 import {
   Box,
   IconButton,
-  Paper,
-  Divider,
   Tooltip,
   useTheme,
 } from "@mui/material";

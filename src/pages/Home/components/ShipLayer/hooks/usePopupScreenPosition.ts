@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useState } from "react";
-import { useMap } from "react-map-gl/mapbox";
+import { useMap } from "react-map-gl/maplibre";
 import {
   getPopupScreenPosition,
   POPUP_HEIGHT,
@@ -30,20 +30,31 @@ export function usePopupScreenPosition(
       return;
     }
 
+    let rafId: number | null = null;
+
+    const scheduleUpdate = () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        updatePosition();
+      });
+    };
+
     updatePosition();
 
     const map = mapRef?.getMap();
     if (!map || (map as { _removed?: boolean })._removed) return;
 
-    map.on("move", updatePosition);
-    map.on("zoom", updatePosition);
-    map.on("resize", updatePosition);
+    map.on("move", scheduleUpdate);
+    map.on("zoom", scheduleUpdate);
+    map.on("resize", scheduleUpdate);
 
     return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
       if ((map as { _removed?: boolean })._removed) return;
-      map.off("move", updatePosition);
-      map.off("zoom", updatePosition);
-      map.off("resize", updatePosition);
+      map.off("move", scheduleUpdate);
+      map.off("zoom", scheduleUpdate);
+      map.off("resize", scheduleUpdate);
     };
   }, [lonLat, mapRef, updatePosition]);
 

@@ -4,12 +4,12 @@
 
 **An interactive ship-tracking and maritime map platform**
 
-Real-time-style vessel visualization with color-coded ship types, rich drawing tools, and layered nautical data — built with React, Mapbox GL, and deck.gl.
+Real-time-style vessel visualization with color-coded ship types, rich drawing tools, and layered nautical data — built with React, MapLibre GL, and deck.gl.
 
 ![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-5-646cff?logo=vite&logoColor=white)
-![Mapbox GL](https://img.shields.io/badge/Mapbox%20GL-3-000000?logo=mapbox&logoColor=white)
+![MapLibre GL](https://img.shields.io/badge/MapLibre%20GL-5-396ebd?logo=maplibre&logoColor=white)
 ![deck.gl](https://img.shields.io/badge/deck.gl-9-29323c)
 ![MUI](https://img.shields.io/badge/MUI-7-007fff?logo=mui&logoColor=white)
 
@@ -43,7 +43,7 @@ Every vessel is color-coded by type, on the map icon, in the legend, and across 
 
 ### Map
 
-- **4 base map styles** — Balad (default, token-free), Mapbox Streets, Dark, and Satellite — switchable live with camera preserved
+- **5 base map styles** — Balad (default), Streets (Voyager), Light (Positron), Dark Matter, and Satellite — switchable live with camera preserved and completely token-free
 - **deck.gl overlay** rendering 42 ships (heading-rotated, type-colored icons), 12 ports, and 12 coastal stations (VTS, AIS Base, Lighthouse, Coastal Radar)
 - **Vessel type legend** — on-map legend of all six ship types with fleet counts; click a type to filter it on/off
 - **Layers panel** — toggle whole categories (Ships / Ports / Stations) or individual items, search, and focus entities on the map
@@ -92,7 +92,7 @@ Every vessel is color-coded by type, on the map icon, in the legend, and across 
 |-------|------------|
 | Framework | [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) |
 | Build | [Vite 5](https://vitejs.dev/) |
-| Map engine | [Mapbox GL JS 3](https://docs.mapbox.com/mapbox-gl-js/) via [react-map-gl 8](https://visgl.github.io/react-map-gl/) |
+| Map engine | [MapLibre GL JS](https://maplibre.org/) via [react-map-gl 8](https://visgl.github.io/react-map-gl/) |
 | Data visualization | [deck.gl 9](https://deck.gl/) (IconLayer, PathLayer, ScatterplotLayer, TextLayer) |
 | UI | [Material UI 7](https://mui.com/) + Emotion |
 | State | [Redux Toolkit](https://redux-toolkit.js.org/) + React Context |
@@ -105,22 +105,19 @@ Every vessel is color-coded by type, on the map icon, in the legend, and across 
 
 - **Node.js** 18+ (20+ recommended)
 - **npm** (ships with Node)
-- A free **Mapbox access token** *(optional — only needed for the Streets / Dark / Satellite styles; the default Balad style works without one)*
 
 ### Installation
 
 ```bash
 # 1. Clone the repository
 git clone <repository-url>
-cd ase
+cd lng
 
 # 2. Install dependencies
 npm install
 
 # 3. Configure environment (optional)
 copy .env.example .env
-# then put your token in .env:
-# VITE_MAPBOX_TOKEN=pk.your_token_here
 
 # 4. Start the dev server
 npm run dev
@@ -137,14 +134,6 @@ Open the URL Vite prints (typically `http://localhost:5173`).
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | Run ESLint over the project |
 
-## Configuration
-
-### Environment variables
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `VITE_MAPBOX_TOKEN` | No | Mapbox access token. Get one at [account.mapbox.com](https://account.mapbox.com/access-tokens/). Without it, only the **Balad** style (served from raah.ir) is available. |
-
 ### Data files
 
 All map entities are local JSON — easy to swap or extend:
@@ -158,7 +147,7 @@ All map entities are local JSON — easy to swap or extend:
 ## Project structure
 
 ```
-ase/
+lng/
 ├── public/                  # Static assets (favicon, icons)
 ├── src/
 │   ├── App.tsx              # Theme, routes, providers, sidebar config
@@ -196,9 +185,9 @@ ase/
 
 ## Architecture notes
 
-- **Persistent map** — the map is mounted once in `AppShell` and hidden (with simulation paused) on non-home routes, avoiding the heavy Mapbox/deck.gl teardown-and-rebuild cost when navigating.
+- **Persistent map** — the map is mounted once in `AppShell` and hidden (with simulation paused) on non-home routes, avoiding the heavy MapLibre/deck.gl teardown-and-rebuild cost when navigating.
 - **Exclusive tools** — `MapToolContext` guarantees only one interactive tool (draw, ruler, capture, …) is active at a time.
-- **Style switching** — `MapStyleSynchronizer` swaps Mapbox styles in place while preserving the camera, then re-attaches the deck.gl overlay.
+- **Style switching** — `MapStyleSynchronizer` swaps MapLibre styles in place while preserving the camera, then re-attaches the deck.gl overlay.
 - **Simulation loop** — `LiveShipContext` drives a `requestAnimationFrame` loop that advances every ship along its waypoint route at its service speed (time-scaled ×30 so maritime speeds remain visible).
 
 ## License

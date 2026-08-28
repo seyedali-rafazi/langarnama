@@ -8,8 +8,16 @@ import {
   type ReactNode,
 } from "react";
 import { BASE_SHIPS } from "../components/ShipLayer/data/shipFleet";
-import portData from "../components/PortLayer/data/iran_ports.json";
-import stationData from "../components/StationLayer/data/iran_coastal_stations.json";
+import {
+  BASE_PORTS,
+  BASE_STATIONS,
+  usePortsQuery,
+  useStationsQuery,
+} from "../../../hooks/queries/useReferenceDataQuery";
+import {
+  useLiveShipEngine,
+  useLiveShipSnapshot,
+} from "../components/ShipLayer/context/LiveShipContext";
 import { SHIP_TYPES, type Ship, type ShipType } from "../components/ShipLayer/types/Ship";
 import type { Port } from "../components/PortLayer/types/Port";
 import type { CoastalStation } from "../components/StationLayer/types/CoastalStation";
@@ -44,56 +52,58 @@ interface MapLayersContextValue {
   ships: Ship[];
   ports: Port[];
   stations: CoastalStation[];
+  isLoadingReferenceData: boolean;
 }
 
 const MapLayersContext = createContext<MapLayersContextValue | null>(null);
 
-function buildDefaultVisibility(
-  ships: Ship[],
-  ports: Port[],
-  stations: CoastalStation[]
-): ItemVisibility {
-  return {
-    ships: Object.fromEntries(ships.map((s) => [s.id, true])),
-    ports: Object.fromEntries(ports.map((p) => [p.id, true])),
-    stations: Object.fromEntries(stations.map((s) => [s.id, true])),
-  };
-}
-
 export function MapLayersProvider({ children }: { children: ReactNode }) {
-  const ships = BASE_SHIPS;
-  const ports = portData as Port[];
-  const stations = stationData as CoastalStation[];
+  const { getShipById, isLoadingBackendShips } = useLiveShipEngine();
+  const liveShips = useLiveShipSnapshot();
+  const { data: portsData, isLoading: isLoadingPorts } = usePortsQuery();
+  const { data: stationsData, isLoading: isLoadingStations } = useStationsQuery();
+
+  const ships = liveShips.length > 0 ? liveShips : BASE_SHIPS;
+  const ports = useMemo(
+    () => (portsData?.ports && portsData.ports.length > 0 ? portsData.ports : BASE_PORTS),
+    [portsData]
+  );
+  const stations = useMemo(
+    () =>
+      stationsData?.stations && stationsData.stations.length > 0
+        ? stationsData.stations
+        : BASE_STATIONS,
+    [stationsData]
+  );
 
   const [activeCategory, setActiveCategory] = useState<LayerCategory>("ships");
-  const [categoryEnabled, setCategoryEnabled] = useState<
-    Record<LayerCategory, boolean>
-  >({
+  const [categoryEnabled, setCategoryEnabled] = useState<Record<LayerCategory, boolean>>({
     ships: true,
     ports: true,
     stations: true,
   });
-  const [itemVisibility, setItemVisibility] = useState<ItemVisibility>(() =>
-    buildDefaultVisibility(ships, ports, stations)
+
+  const [itemVisibility, setItemVisibility] = useState<ItemVisibility>({
+    ships: {},
+    ports: {},
+    stations: {},
+  });
+
+  const [shipTypeVisibility, setShipTypeVisibility] = useState<ShipTypeVisibility>(
+    () => Object.fromEntries(SHIP_TYPES.map((type) => [type, true])) as ShipTypeVisibility
   );
-  const [shipTypeVisibility, setShipTypeVisibility] =
-    useState<ShipTypeVisibility>(
-      () =>
-        Object.fromEntries(
-          SHIP_TYPES.map((type) => [type, true])
-        ) as ShipTypeVisibility
-    );
-  const [searchQuery, setSearchQueryState] = useState<
-    Record<LayerCategory, string>
-  >({
+
+  const [searchQuery, setSearchQueryState] = useState<Record<LayerCategory, string>>({
     ships: "",
     ports: "",
     stations: "",
   });
+
   const [selectedEntity, setSelectedEntity] = useState<{
     category: LayerCategory;
     id: string;
   } | null>(null);
+
   const [focusRequest, setFocusRequest] = useState<{
     category: LayerCategory;
     id: string;
@@ -108,23 +118,23 @@ export function MapLayersProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  const toggleItemVisibility = useCallback(
-    (category: LayerCategory, id: string) => {
-      setItemVisibility((prev) => ({
+  const toggleItemVisibility = useCallback((category: LayerCategory, id: string) => {
+    setItemVisibility((prev) => {
+      const currentVal = prev[category]?.[id] ?? true;
+      return {
         ...prev,
         [category]: {
-          ...prev[category],
-          [id]: !prev[category][id],
+          ...(prev[category] || {}),
+          [id]: !currentVal,
         },
-      }));
-    },
-    []
-  );
+      };
+    });
+  }, []);
 
   const isItemVisible = useCallback(
     (category: LayerCategory, id: string) => {
       if (!categoryEnabled[category]) return false;
-      return itemVisibility[category][id] ?? true;
+      return itemVisibility[category]?.[id] ?? true;
     },
     [categoryEnabled, itemVisibility]
   );
@@ -137,63 +147,53 @@ export function MapLayersProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isShipVisible = useCallback(
-    (ship: Ship) =>
-      isItemVisible("ships", ship.id) &&
-      (shipTypeVisibility[ship.shipType] ?? true),
+    (ship: Ship) => isItemVisible("ships", ship.id) && (shipTypeVisibility[ship.shipType] ?? true),
     [isItemVisible, shipTypeVisibility]
   );
 
-  const setCategoryItemsVisibility = useCallback(
-    (category: LayerCategory, visible: boolean) => {
-      setItemVisibility((prev) => ({
-        ...prev,
-        [category]: Object.fromEntries(
-          Object.keys(prev[category]).map((id) => [id, visible])
-        ),
-      }));
-    },
-    []
-  );
+  const setCategoryItemsVisibility = useCallback((category: LayerCategory, visible: boolean) => {
+    setItemVisibility((prev) => ({
+      ...prev,
+      [category]: Object.fromEntries(Object.keys(prev[category] || {}).map((id) => [id, visible])),
+    }));
+  }, []);
 
-  const setSearchQuery = useCallback(
-    (category: LayerCategory, query: string) => {
-      setSearchQueryState((prev) => ({ ...prev, [category]: query }));
-    },
-    []
-  );
+  const setSearchQuery = useCallback((category: LayerCategory, query: string) => {
+    setSearchQueryState((prev) => ({ ...prev, [category]: query }));
+  }, []);
 
   const getEntityData = useCallback(
     (category: LayerCategory, id: string): MapEntity | null => {
       if (category === "ships") {
-        return ships.find((s) => s.id === id) ?? null;
+        const live = getShipById(id);
+        if (live) return live;
+        return ships.find((s) => s.id === id || s.mmsi === id) ?? null;
       }
       if (category === "ports") {
-        return ports.find((p) => p.id === id) ?? null;
+        return (
+          ports.find(
+            (p) => p.id === id || p.locode.toLowerCase() === id.toLowerCase()
+          ) ?? null
+        );
       }
       return stations.find((s) => s.id === id) ?? null;
     },
-    [ships, ports, stations]
+    [getShipById, ships, ports, stations]
   );
 
-  const selectEntity = useCallback(
-    (category: LayerCategory, id: string | null) => {
-      setSelectedEntity(id ? { category, id } : null);
-      if (id) {
-        setActiveCategory(category);
-      }
-    },
-    []
-  );
-
-  const focusEntity = useCallback(
-    (category: LayerCategory, id: string) => {
-      setSelectedEntity({ category, id });
+  const selectEntity = useCallback((category: LayerCategory, id: string | null) => {
+    setSelectedEntity(id ? { category, id } : null);
+    if (id) {
       setActiveCategory(category);
-      focusNonceRef.current += 1;
-      setFocusRequest({ category, id, nonce: focusNonceRef.current });
-    },
-    []
-  );
+    }
+  }, []);
+
+  const focusEntity = useCallback((category: LayerCategory, id: string) => {
+    setSelectedEntity({ category, id });
+    setActiveCategory(category);
+    focusNonceRef.current += 1;
+    setFocusRequest({ category, id, nonce: focusNonceRef.current });
+  }, []);
 
   const getSelectedEntityData = useCallback((): MapEntity | null => {
     if (!selectedEntity) return null;
@@ -224,6 +224,7 @@ export function MapLayersProvider({ children }: { children: ReactNode }) {
       ships,
       ports,
       stations,
+      isLoadingReferenceData: isLoadingPorts || isLoadingStations || Boolean(isLoadingBackendShips),
     }),
     [
       activeCategory,
@@ -247,14 +248,13 @@ export function MapLayersProvider({ children }: { children: ReactNode }) {
       ships,
       ports,
       stations,
+      isLoadingPorts,
+      isLoadingStations,
+      isLoadingBackendShips,
     ]
   );
 
-  return (
-    <MapLayersContext.Provider value={value}>
-      {children}
-    </MapLayersContext.Provider>
-  );
+  return <MapLayersContext.Provider value={value}>{children}</MapLayersContext.Provider>;
 }
 
 export function useMapLayers() {

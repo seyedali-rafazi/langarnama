@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useMap } from "react-map-gl/mapbox";
+import { useMap } from "react-map-gl/maplibre";
 import { useLiveShipEngine } from "../ShipLayer/context/LiveShipContext";
 import { useMapLayers } from "../../context/MapLayersContext";
 

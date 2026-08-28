@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useMap } from "react-map-gl/mapbox";
+import { useMap } from "react-map-gl/maplibre";
 
 const createGeoJSONCircle = (center, radiusInKm, points = 64) => {
   const coords = [];
@@ -141,8 +141,10 @@ const CircleDrawLogic = ({ isCircleMode, setIsCircleMode }) => {
       }
     };
 
-    const handlePointerDown = (e) => {
+    const handlePointerDown = (e: any) => {
       if (!e.lngLat) return;
+      if (!isCircleMode && circleDataRef.current.length === 0) return;
+
       const lngLat = [e.lngLat.lng, e.lngLat.lat];
 
       if (isCircleMode) {
@@ -161,31 +163,37 @@ const CircleDrawLogic = ({ isCircleMode, setIsCircleMode }) => {
         return;
       }
 
-      const handles = map.queryRenderedFeatures(e.point, {
-        layers: ["custom-circle-handles-layer"],
-      });
-      if (handles.length > 0) {
-        e.preventDefault();
-        map.dragPan.disable();
-        activeCircleId.current = handles[0].properties.id;
-        interactionRef.current = { mode: "resizing" };
-        return;
+      if (activeCircleId.current && map.getLayer("custom-circle-handles-layer")) {
+        const handles = map.queryRenderedFeatures(e.point, {
+          layers: ["custom-circle-handles-layer"],
+        });
+        if (handles.length > 0) {
+          e.preventDefault();
+          map.dragPan.disable();
+          activeCircleId.current = handles[0].properties.id;
+          interactionRef.current = { mode: "resizing" };
+          return;
+        }
       }
 
-      const fills = map.queryRenderedFeatures(e.point, {
-        layers: ["custom-circle-fill"],
-      });
-      if (fills.length > 0) {
-        e.preventDefault();
-        map.dragPan.disable();
-        activeCircleId.current = fills[0].properties.id;
-        interactionRef.current = { mode: "moving", startLngLat: lngLat };
+      if (circleDataRef.current.length > 0 && map.getLayer("custom-circle-fill")) {
+        const fills = map.queryRenderedFeatures(e.point, {
+          layers: ["custom-circle-fill"],
+        });
+        if (fills.length > 0) {
+          e.preventDefault();
+          map.dragPan.disable();
+          activeCircleId.current = fills[0].properties.id;
+          interactionRef.current = { mode: "moving", startLngLat: lngLat };
+          updateMapData();
+          return;
+        }
+      }
+
+      if (activeCircleId.current !== null) {
+        activeCircleId.current = null;
         updateMapData();
-        return;
       }
-
-      activeCircleId.current = null;
-      updateMapData();
     };
 
     const handlePointerMove = (e) => {

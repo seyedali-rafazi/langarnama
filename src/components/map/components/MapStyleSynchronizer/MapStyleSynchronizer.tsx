@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useMap } from "react-map-gl/mapbox";
+import { useMap } from "react-map-gl/maplibre";
 import { useAppSelector } from "../../../../store/hooks";
 import { getMapStyleUrl } from "../../../../store/mapStyles";
 
@@ -14,46 +14,70 @@ export default function MapStyleSynchronizer() {
 
   useEffect(() => {
     const map = current?.getMap();
-    if (!map) return;
+    if (!map || (map as { _removed?: boolean })._removed) return;
 
     if (mapStyleId === activeStyleIdRef.current) return;
 
-    // Mark the target style as applied immediately. mapbox-gl skips the
-    // `style.load` event when it can diff two styles in place, so relying on
-    // that event to update this ref would leave it desynced and cause later
-    // style switches to be incorrectly short-circuited.
+    // Mark the target style as applied immediately.
     activeStyleIdRef.current = mapStyleId;
 
     const nextStyle = getMapStyleUrl(mapStyleId);
-    const camera = {
-      center: map.getCenter(),
-      zoom: map.getZoom(),
+    let camera = {
+      center: { lng: 53.5, lat: 29.5 } as any,
+      zoom: 5,
       bearing: 0,
       pitch: 0,
     };
 
+    try {
+      if (typeof map.getCenter === "function" && typeof map.getZoom === "function") {
+        camera = {
+          center: map.getCenter(),
+          zoom: map.getZoom(),
+          bearing: 0,
+          pitch: 0,
+        };
+      }
+    } catch {
+      // Use fallback camera
+    }
+
     const handleStyleLoad = () => {
       try {
-        map.setProjection("mercator");
+        if (typeof (map as any).setProjection === "function") {
+          (map as any).setProjection({ type: "mercator" });
+        }
       } catch {
         // Ignore if projection cannot be set on this style.
       }
 
-      map.jumpTo(camera);
-      map.dragRotate.disable();
-      map.touchPitch?.disable();
+      try {
+        map.jumpTo(camera);
+        if (map.dragRotate?.isEnabled()) map.dragRotate.disable();
+        if (map.touchPitch?.isEnabled()) map.touchPitch.disable();
+      } catch {
+        // Safe guard
+      }
 
       // Notify deck.gl overlay to refresh after projection/camera are restored.
-      map.fire("ase:style-ready");
+      try {
+        map.fire("ase:style-ready");
+      } catch {
+        // Safe guard
+      }
     };
 
-    map.once("style.load", handleStyleLoad);
-    // Force a full reload (diff: false) so `style.load` always fires and the
-    // tool layers/sources get cleanly re-initialised on every switch.
-    map.setStyle(nextStyle, { diff: false });
+    map.once("styledata", handleStyleLoad);
+
+    // Force style apply so sources/layers are re-initialized cleanly.
+    try {
+      map.setStyle(nextStyle as any, { diff: false });
+    } catch {
+      // Safe guard
+    }
 
     return () => {
-      map.off("style.load", handleStyleLoad);
+      map.off("styledata", handleStyleLoad);
     };
   }, [current, mapStyleId]);
 

@@ -1,5 +1,6 @@
-import "mapbox-gl/dist/mapbox-gl.css";
-import { Map, Source, Layer } from "react-map-gl/mapbox";
+import "maplibre-gl/dist/maplibre-gl.css";
+import maplibregl from "maplibre-gl";
+import { Map, Source, Layer } from "react-map-gl/maplibre";
 import CoordinateDisplay from "./components/CoordinateDisplay/CoordinateDisplay";
 import MapControlBox from "./components/MapControlBox";
 import MapNavigator from "./components/MapNavigator/MapNavigator";
@@ -16,18 +17,12 @@ import MapStyleSynchronizer from "./components/MapStyleSynchronizer/MapStyleSync
 import { MapToolProvider } from "./context/MapToolContext";
 import { AccordionGroupProvider } from "../utils/MapTools/AccordionGroupContext";
 import MapShipBadge from "../../pages/Home/components/MapShipBadge/MapShipBadge";
-import ShipLegend from "../../pages/Home/components/ShipLegend/ShipLegend";
-
-const MAPBOX_TOKEN =
-  import.meta.env.VITE_MAPBOX_TOKEN ||
-  import.meta.env.REACT_APP_MAPBOX_TOKEN;
 
 const ZOOM_BOX_POSITION = "top-left";
-const COORDINATE_POSITION = "bottom-left";
 const TOOLBAR_POSITION = "top-right";
 const MAP_VIEW = "bottom-right";
 
-interface MapboxMapProps {
+interface LangarnamaMapProps {
   children?: ReactNode;
 }
 
@@ -53,11 +48,9 @@ const worldPolygon = {
   ],
 };
 
-const LangarnamaMap: FC<MapboxMapProps> = ({ children }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+const LangarnamaMap: FC<LangarnamaMapProps> = ({ children }) => {
   const mapStyleId = useAppSelector((state) => state.settings.mapStyleId);
-  const bootMapStyleRef = useRef<string | null>(null);
+  const bootMapStyleRef = useRef<string | Record<string, unknown> | null>(null);
   if (bootMapStyleRef.current === null) {
     bootMapStyleRef.current = getMapStyleUrl(mapStyleId);
   }
@@ -82,10 +75,9 @@ const LangarnamaMap: FC<MapboxMapProps> = ({ children }) => {
       }}
     >
       <Map
+        mapLib={maplibregl}
         initialViewState={initialViewState}
-        mapboxAccessToken={MAPBOX_TOKEN}
-        mapStyle={bootMapStyleRef.current}
-        projection="mercator"
+        mapStyle={bootMapStyleRef.current as any}
         dragRotate={false}
         pitchWithRotate={false}
         touchPitch={false}
@@ -96,7 +88,7 @@ const LangarnamaMap: FC<MapboxMapProps> = ({ children }) => {
         <MapFlatViewEnforcer />
         <MapStyleSynchronizer />
         <MapResizeHandler />
-        {/* Mapbox-native dark shadow layer rendered below the deck.gl overlay */}
+        {/* Native dark shadow layer rendered below the deck.gl overlay */}
         <Source
           id="dark-shadow-source"
           type="geojson"
@@ -132,15 +124,8 @@ const LangarnamaMap: FC<MapboxMapProps> = ({ children }) => {
               <MapShipBadge />
               <MapView />
             </MapControlBox>
-            
-            {!isMobile && (
-              <MapControlBox position={COORDINATE_POSITION}>
-                <CoordinateDisplay />
-              </MapControlBox>
-            )}
-            <MapControlBox position="bottom-left">
-              <ShipLegend />
-            </MapControlBox>
+
+
           </AccordionGroupProvider>
         </MapToolProvider>
       </Map>

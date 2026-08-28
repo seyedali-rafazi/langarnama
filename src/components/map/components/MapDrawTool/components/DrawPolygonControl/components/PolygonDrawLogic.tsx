@@ -1,6 +1,6 @@
 // src/components/ExpandableToolbar/components/DrawPolygonControl/PolygonDrawLogic.jsx
 import { useEffect, useRef } from "react";
-import { useMap } from "react-map-gl/mapbox";
+import { useMap } from "react-map-gl/maplibre";
 
 const PolygonDrawLogic = ({ isPolyMode, setIsPolyMode }) => {
   const { current: currentMap } = useMap();
@@ -28,7 +28,7 @@ const PolygonDrawLogic = ({ isPolyMode, setIsPolyMode }) => {
       coords.push(hoverLngLat.current);
     }
 
-    // A valid Mapbox Polygon must have the first and last point be the same
+    // A valid Polygon must have the first and last point be the same
     // Only close it if we are done drawing it and it has enough points
     if (!isCurrentlyDrawing && coords.length > 2) {
       coords.push(coords[0]);
@@ -172,9 +172,10 @@ const PolygonDrawLogic = ({ isPolyMode, setIsPolyMode }) => {
     };
     window.addEventListener("keydown", handleKeyDown);
 
-    const handlePointerDown = (e) => {
+    const handlePointerDown = (e: any) => {
       // Safety check for touch events that might not have lngLat
       if (!e.lngLat || !e.point) return;
+      if (!isPolyMode && polyDataRef.current.length === 0) return;
 
       const point = e.point;
       const lngLat = [e.lngLat.lng, e.lngLat.lat];
@@ -207,17 +208,18 @@ const PolygonDrawLogic = ({ isPolyMode, setIsPolyMode }) => {
             (p) => p.id === activePolyId.current
           );
 
-          // Check if clicking near the first point to close it
-          const firstPt = map.project(activePoly.vertices[0]);
-          const distance = Math.sqrt(
-            Math.pow(point.x - firstPt.x, 2) + Math.pow(point.y - firstPt.y, 2)
-          );
+          if (activePoly) {
+            // Check if clicking near the first point to close it
+            const firstPt = map.project(activePoly.vertices[0]);
+            const distance = Math.sqrt(
+              Math.pow(point.x - firstPt.x, 2) + Math.pow(point.y - firstPt.y, 2)
+            );
 
-          if (distance < 20 && activePoly.vertices.length > 2) {
-            // Increased tolerance for fat fingers
-            finishDrawing();
-          } else {
-            activePoly.vertices.push(lngLat);
+            if (distance < 20 && activePoly.vertices.length > 2) {
+              finishDrawing();
+            } else {
+              activePoly.vertices.push(lngLat);
+            }
           }
         }
         updateMapData();
@@ -225,40 +227,47 @@ const PolygonDrawLogic = ({ isPolyMode, setIsPolyMode }) => {
       }
 
       // 2. Check if clicking a vertex handle (Edit shape)
-      const handleFeatures = map.queryRenderedFeatures(point, {
-        layers: ["custom-poly-handles-layer"],
-      });
-      if (handleFeatures.length > 0) {
-        e.preventDefault();
-        map.dragPan.disable();
-        activePolyId.current = handleFeatures[0].properties.id;
-        interactionRef.current = {
-          mode: "editing-vertex",
-          vertexIndex: handleFeatures[0].properties.index,
-          startLngLat: lngLat,
-        };
-        return;
+      if (activePolyId.current && !isDrawingRef.current && map.getLayer("custom-poly-handles-layer")) {
+        const handleFeatures = map.queryRenderedFeatures(point, {
+          layers: ["custom-poly-handles-layer"],
+        });
+        if (handleFeatures.length > 0) {
+          e.preventDefault();
+          map.dragPan.disable();
+          activePolyId.current = handleFeatures[0].properties.id;
+          interactionRef.current = {
+            mode: "editing-vertex",
+            vertexIndex: handleFeatures[0].properties.index,
+            startLngLat: lngLat,
+          };
+          return;
+        }
       }
 
       // 3. Check if clicking inside a polygon (Move shape)
-      const polyFeatures = map.queryRenderedFeatures(point, {
-        layers: ["custom-poly-fill"],
-      });
-      if (polyFeatures.length > 0) {
-        e.preventDefault();
-        map.dragPan.disable();
-        activePolyId.current = polyFeatures[0].properties.id;
-        interactionRef.current = { mode: "moving", startLngLat: lngLat };
-        updateMapData();
-        return;
+      if (polyDataRef.current.length > 0 && map.getLayer("custom-poly-fill")) {
+        const polyFeatures = map.queryRenderedFeatures(point, {
+          layers: ["custom-poly-fill"],
+        });
+        if (polyFeatures.length > 0) {
+          e.preventDefault();
+          map.dragPan.disable();
+          activePolyId.current = polyFeatures[0].properties.id;
+          interactionRef.current = { mode: "moving", startLngLat: lngLat };
+          updateMapData();
+          return;
+        }
       }
 
       // Deselect if clicking on empty map
-      activePolyId.current = null;
-      updateMapData();
+      if (activePolyId.current !== null) {
+        activePolyId.current = null;
+        updateMapData();
+      }
     };
 
-    const handlePointerMove = (e) => {
+    const handlePointerMove = (e: any) => {
+      if (!isDrawingRef.current && !interactionRef.current.mode) return;
       if (!e.lngLat) return;
       const currentLngLat = [e.lngLat.lng, e.lngLat.lat];
 

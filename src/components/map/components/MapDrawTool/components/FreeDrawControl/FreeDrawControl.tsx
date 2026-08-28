@@ -27,7 +27,7 @@ const FreeDrawControl = () => {
         />
       )}
 
-      {/* Handles the actual mapbox drawing events */}
+      {/* Handles the actual drawing events */}
       <FreeDrawLogic
         isDrawingMode={isDrawingMode}
         lineColor={lineColor}

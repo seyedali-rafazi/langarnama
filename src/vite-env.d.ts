@@ -1,8 +1,9 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  readonly VITE_MAPBOX_TOKEN?: string;
-  readonly REACT_APP_MAPBOX_TOKEN?: string;
+  readonly VITE_API_BASE_URL?: string;
+  readonly VITE_BACKEND_TARGET?: string;
+  readonly VITE_SITE_URL?: string;
 }
 
 interface ImportMeta {

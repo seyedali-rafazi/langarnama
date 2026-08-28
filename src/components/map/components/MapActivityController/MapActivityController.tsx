@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useMap } from "react-map-gl/mapbox";
+import { useMap } from "react-map-gl/maplibre";
 
 export default function MapActivityController({ active }: { active: boolean }) {
   const { current: mapRef } = useMap();
@@ -9,9 +9,20 @@ export default function MapActivityController({ active }: { active: boolean }) {
     if (!map || (map as { _removed?: boolean })._removed) return;
 
     if (active) {
-      map.resize();
+      const container = map.getContainer?.();
+      if (container && container.clientWidth > 0 && container.clientHeight > 0) {
+        try {
+          map.resize();
+        } catch {
+          // Ignore resize errors during initial mount
+        }
+      }
     } else {
-      map.stop();
+      try {
+        map.stop();
+      } catch {
+        // Ignore stop errors if map is unloading
+      }
     }
   }, [active, mapRef]);
 

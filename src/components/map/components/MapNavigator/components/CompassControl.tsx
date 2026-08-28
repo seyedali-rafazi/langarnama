@@ -1,6 +1,6 @@
 import { Box, IconButton, Tooltip, useTheme } from "@mui/material";
 import { useEffect, useState } from "react";
-import { useMap } from "react-map-gl/mapbox";
+import { useMap } from "react-map-gl/maplibre";
 
 const CompassControl = () => {
   const { current: map } = useMap();
@@ -48,7 +48,7 @@ const CompassControl = () => {
             borderRadius: "8px",
             color: "text.secondary",
             backgroundColor: "transparent",
-            transition: "background-color 0.2s ease, border-radius 0.2s ease", // Exclude transform so the rotation is smooth
+            transition: "background-color 0.2s ease, border-radius 0.2s ease",
             "&:hover": {
               backgroundColor: `${theme.palette.primary.main} !important`,
               color: "white",

@@ -96,11 +96,13 @@ button {
   overflow: hidden;
 }
 
-/*------------------------------Mapbox------------------------------------------*/
+/*------------------------------MapLibre & Mapbox------------------------------------------*/
+.maplibregl-ctrl-logo,
 .mapboxgl-ctrl-logo {
   display: none !important;
 }
 
+.ship-popup .maplibregl-popup-content,
 .ship-popup .mapboxgl-popup-content {
   padding: 0;
   background: transparent;
@@ -108,16 +110,20 @@ button {
   border-radius: 0;
 }
 
+.ship-popup .maplibregl-popup-tip,
 .ship-popup .mapboxgl-popup-tip {
   border-top-color: #161d22;
 }
 
+.ship-popup.anchor-top .maplibregl-popup-tip,
 .ship-popup.anchor-top .mapboxgl-popup-tip,
+.ship-popup.maplibregl-popup-anchor-top .maplibregl-popup-tip,
 .ship-popup.mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
   border-bottom-color: #161d22;
   border-top-color: transparent;
 }
 
+.ship-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
 .ship-popup.mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
   border-top-color: #161d22;
   border-bottom-color: transparent;

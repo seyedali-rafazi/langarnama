@@ -1,79 +1,107 @@
 import { ContentCopy } from "@mui/icons-material";
 import { Box, IconButton, Paper } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
-import { useMap, Popup } from "react-map-gl/mapbox"; // Import Popup
+import { useMap, Popup } from "react-map-gl/maplibre";
+import type { MapMouseEvent } from "maplibre-gl";
 import LatCoordinate from "./components/LatCoordinate";
 import LonCoordinate from "./components/LonCoordinate";
 import { toast } from "sonner";
 
 const CoordinateDisplay = () => {
   const { current: map } = useMap();
-  const [coords, setCoords] = useState(null);
+  const [coords, setCoords] = useState<{ lng: string; lat: string; rawLng: number; rawLat: number } | null>(null);
   const [isPicking, setIsPicking] = useState(false);
 
-  // Handle Mouse Movement
+  // Handle Mouse Movement with rAF throttling
   useEffect(() => {
     if (!map) return;
 
-    const handleMouseMove = (e) => {
-      const { lng, lat } = e.lngLat;
+    let rafId: number | null = null;
+    let lastTime = 0;
+    let pendingLngLat: { lng: number; lat: number } | null = null;
+
+    const flush = () => {
+      rafId = null;
+      if (!pendingLngLat) return;
+      const { lng, lat } = pendingLngLat;
       setCoords({
         lng: lng.toFixed(5),
         lat: lat.toFixed(5),
-        rawLng: lng, // Keep raw numbers for the Popup position
+        rawLng: lng,
         rawLat: lat,
       });
     };
 
-    const handleMouseOut = () => setCoords(null);
+    const handleMouseMove = (e: any) => {
+      pendingLngLat = e.lngLat;
+      const now = performance.now();
+      // Throttle to at most once every 60ms (approx 16fps)
+      if (now - lastTime >= 60) {
+        lastTime = now;
+        if (rafId !== null) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(flush);
+      } else if (rafId === null) {
+        rafId = requestAnimationFrame(() => {
+          lastTime = performance.now();
+          flush();
+        });
+      }
+    };
+
+    const handleMouseOut = () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      pendingLngLat = null;
+      setCoords(null);
+    };
 
     map.on("mousemove", handleMouseMove);
     map.on("mouseout", handleMouseOut);
 
     return () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
       map.off("mousemove", handleMouseMove);
       map.off("mouseout", handleMouseOut);
     };
   }, [map]);
 
-const handleMapClick = useCallback(
-  (e: mapboxgl.MapMouseEvent) => {
-    const { lng, lat } = e.lngLat;
-    const text = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  const handleMapClick = useCallback(
+    (e: MapMouseEvent) => {
+      const { lng, lat } = e.lngLat;
+      const text = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 
-    navigator.clipboard.writeText(text).then(() => {
-      toast.success("Copied successful into your clipboard");
-    });
+      navigator.clipboard.writeText(text).then(() => {
+        toast.success("Copied successful into your clipboard");
+      });
 
-    setIsPicking(false);
-    // ✅ Access canvas directly from event to avoid stale `map` reference
-    e.target.getCanvas().style.cursor = "";
-  },
-  // ✅ Remove `map` from deps — use `e.target` instead
-  [setIsPicking]
-);
+      setIsPicking(false);
+      e.target.getCanvas().style.cursor = "";
+    },
+    [setIsPicking]
+  );
 
-useEffect(() => {
-  if (!map) return;
+  useEffect(() => {
+    if (!map) return;
 
-  if (isPicking) {
-    map.getCanvas().style.cursor = "crosshair";
-    map.on("click", handleMapClick);
-  } else {
-    map.getCanvas().style.cursor = "";
-    map.off("click", handleMapClick);
-  }
+    if (isPicking) {
+      map.getCanvas().style.cursor = "crosshair";
+      map.on("click", handleMapClick as any);
+    } else {
+      map.getCanvas().style.cursor = "";
+      map.off("click", handleMapClick as any);
+    }
 
-  // ✅ Cleanup always removes the current handler reference
-  return () => {
-    map.off("click", handleMapClick);
-  };
-}, [isPicking, map, handleMapClick]);
-
+    return () => {
+      map.off("click", handleMapClick as any);
+    };
+  }, [isPicking, map, handleMapClick]);
 
   return (
     <>
-      {/* Mapbox Native Popup Tooltip */}
       {isPicking && coords && (
         <Popup
           longitude={Number(coords.rawLng)}

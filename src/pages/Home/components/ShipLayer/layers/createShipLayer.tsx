@@ -83,6 +83,11 @@ export function createShipIconLayer(
       billboard: false,
       autoHighlight: true,
       highlightColor: [255, 255, 255, 140],
+      updateTriggers: {
+        getPosition: [data],
+        getAngle: [data],
+        getIcon: [data],
+      },
       onHover: (info) => {
         if (onShipHover) {
           onShipHover((info.object as Ship) ?? null);
@@ -119,6 +124,10 @@ export function createShipIconLayer(
         outlineWidth: 2,
         outlineColor: [10, 15, 20, 220],
         billboard: true,
+        updateTriggers: {
+          getPosition: [data],
+          getText: [data],
+        },
       })
     );
   }

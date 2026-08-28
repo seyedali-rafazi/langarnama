@@ -1,6 +1,6 @@
 // src/components/ExpandableToolbar/components/DrawRectangleControl/RectangleDrawLogic.jsx
 import { useEffect, useRef } from "react";
-import { useMap } from "react-map-gl/mapbox";
+import { useMap } from "react-map-gl/maplibre";
 
 const RectangleDrawLogic = ({ isRectMode, setIsRectMode }) => {
   const { current: currentMap } = useMap();
@@ -135,37 +135,45 @@ const RectangleDrawLogic = ({ isRectMode, setIsRectMode }) => {
       }
     };
 
-    const handlePointerDown = (e) => {
+    const handlePointerDown = (e: any) => {
+      if (!isRectMode && rectDataRef.current.length === 0) {
+        return;
+      }
+
       const point = e.point;
       const lngLat = [e.lngLat.lng, e.lngLat.lat];
 
       // Check if clicking a handle (Resize)
-      const handleFeatures = map.queryRenderedFeatures(point, {
-        layers: ["custom-rect-handles-layer"],
-      });
-      if (handleFeatures.length > 0) {
-        e.preventDefault();
-        map.dragPan.disable();
-        const handleType = handleFeatures[0].properties.handle;
-        activeRectId.current = handleFeatures[0].properties.id;
-        interactionRef.current = {
-          mode: `resizing-${handleType}`,
-          startLngLat: lngLat,
-        };
-        return;
+      if (activeRectId.current && map.getLayer("custom-rect-handles-layer")) {
+        const handleFeatures = map.queryRenderedFeatures(point, {
+          layers: ["custom-rect-handles-layer"],
+        });
+        if (handleFeatures.length > 0) {
+          e.preventDefault();
+          map.dragPan.disable();
+          const handleType = handleFeatures[0].properties.handle;
+          activeRectId.current = handleFeatures[0].properties.id;
+          interactionRef.current = {
+            mode: `resizing-${handleType}`,
+            startLngLat: lngLat,
+          };
+          return;
+        }
       }
 
       // Check if clicking a rectangle (Move or Select)
-      const rectFeatures = map.queryRenderedFeatures(point, {
-        layers: ["custom-rect-fill"],
-      });
-      if (rectFeatures.length > 0 && !isRectMode) {
-        e.preventDefault();
-        map.dragPan.disable();
-        activeRectId.current = rectFeatures[0].properties.id;
-        interactionRef.current = { mode: "moving", startLngLat: lngLat };
-        updateMapData();
-        return;
+      if (rectDataRef.current.length > 0 && map.getLayer("custom-rect-fill")) {
+        const rectFeatures = map.queryRenderedFeatures(point, {
+          layers: ["custom-rect-fill"],
+        });
+        if (rectFeatures.length > 0 && !isRectMode) {
+          e.preventDefault();
+          map.dragPan.disable();
+          activeRectId.current = rectFeatures[0].properties.id;
+          interactionRef.current = { mode: "moving", startLngLat: lngLat };
+          updateMapData();
+          return;
+        }
       }
 
       // Start Drawing new rectangle
@@ -178,8 +186,10 @@ const RectangleDrawLogic = ({ isRectMode, setIsRectMode }) => {
         interactionRef.current = { mode: "drawing", startLngLat: lngLat };
       } else {
         // Deselect
-        activeRectId.current = null;
-        updateMapData();
+        if (activeRectId.current !== null) {
+          activeRectId.current = null;
+          updateMapData();
+        }
       }
     };
 

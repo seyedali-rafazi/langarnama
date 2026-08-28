@@ -1,4 +1,4 @@
-import { Box } from "@mui/material";
+import { Box, useMediaQuery, useTheme } from "@mui/material";
 import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import LangarnamaMap from "../../components/map/LangarnamaMap";
@@ -9,14 +9,19 @@ import MapFocusController from "./components/MapFocusController/MapFocusControll
 import MapItemPopup from "./components/MapItemPopup/MapItemPopup";
 import ShipLegend from "./components/ShipLegend/ShipLegend";
 import { useMapLayers } from "./context/MapLayersContext";
+import CoordinateDisplay from "../../components/map/components/CoordinateDisplay/CoordinateDisplay";
 
 interface HomePageProps {
   mapActive?: boolean;
 }
 
 const HomePage = ({ mapActive = true }: HomePageProps) => {
+  const theme = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
   const { focusEntity } = useMapLayers();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const COORDINATE_POSITION = "bottom-left";
+
 
   useEffect(() => {
     const shipId = searchParams.get("select");
@@ -29,10 +34,17 @@ const HomePage = ({ mapActive = true }: HomePageProps) => {
   return (
     <Box sx={{ width: "100%", height: "100%" }}>
       <LangarnamaMap>
-        
+        {!isMobile && (
+          <MapControlBox position={COORDINATE_POSITION}>
+            <CoordinateDisplay />
+          </MapControlBox>
+        )}
         <MapActivityController active={mapActive} />
         <MapFocusController />
         <MapEntitiesLayer />
+        <MapControlBox position="bottom-left" margin={{ top: 0, bottom: 24, left: 24, right: 0 }}>
+          <ShipLegend />
+        </MapControlBox>
         <Box
           sx={{
             position: "absolute",
@@ -44,6 +56,7 @@ const HomePage = ({ mapActive = true }: HomePageProps) => {
         >
           <MapItemPopup />
         </Box>
+
       </LangarnamaMap>
     </Box>
   );

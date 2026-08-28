@@ -1,6 +1,6 @@
 // src/components/ExpandableToolbar/components/DrawRulerControl/components/RulerLogic.jsx
 import { useEffect, useRef } from "react";
-import { useMap } from "react-map-gl/mapbox";
+import { useMap } from "react-map-gl/maplibre";
 
 // Haversine formula to calculate distance in km
 const calculateDistance = (pt1, pt2) => {
@@ -139,7 +139,7 @@ const RulerLogic = ({ isRulerMode, setIsRulerMode }) => {
             "text-size": 14,
             "text-offset": [0, 1.5], // Pushes the text slightly below the cursor/line
             "text-allow-overlap": true, // Forces text to show even if it overlaps
-            "text-ignore-placement": true, // Disables Mapbox's collision box
+            "text-ignore-placement": true, // Disables collision box
           },
           paint: {
             "text-color": "#ffffff",

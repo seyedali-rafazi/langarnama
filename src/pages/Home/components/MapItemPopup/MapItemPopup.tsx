@@ -20,7 +20,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
-import { useMap } from "react-map-gl/mapbox";
+import { useMap } from "react-map-gl/maplibre";
 import { useShips } from "../ShipLayer/context/ShipContext";
 import { useLiveShipEngine } from "../ShipLayer/context/LiveShipContext";
 import ShipThumb from "../ShipLayer/components/ShipThumb";

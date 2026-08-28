@@ -18,8 +18,16 @@ export interface Ship {
   speed_kts: number;
   draft_m: number;
   length_m: number;
+  beam_m?: number;
+  callsign?: string;
+  imo?: number;
+  nav_status?: string;
   origin_port: string;
   destination_port: string;
+  eta?: string;
+  country?: string;
+  flag?: string;
+  is_live?: boolean;
   /** Route waypoints in [lat, lon] order. */
   path: [number, number][];
   lastUpdate: string;

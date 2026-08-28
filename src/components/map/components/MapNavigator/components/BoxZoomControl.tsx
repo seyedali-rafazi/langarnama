@@ -1,7 +1,7 @@
 import { Box, Tooltip, IconButton, useTheme } from "@mui/material";
 import HighlightAltIcon from "@mui/icons-material/HighlightAlt";
 import { useState, useEffect, useRef } from "react";
-import { useMap } from "react-map-gl/mapbox";
+import { useMap } from "react-map-gl/maplibre";
 
 const BoxZoomControl = () => {
   const theme = useTheme();
@@ -82,7 +82,6 @@ const BoxZoomControl = () => {
       }
 
       // 'touchend' might not have e.point directly, fallback to the last known position if needed
-      // Mapbox usually populates e.point for touchend but let's be safe.
       const currentPoint = e.point || startPoint;
 
       const dist = Math.sqrt(
@@ -107,7 +106,7 @@ const BoxZoomControl = () => {
       setIsActive(false);
     };
 
-    // Attach Mapbox event listeners for BOTH Mouse and Touch
+    // Attach event listeners for BOTH Mouse and Touch
     map.on("mousedown", onDragStart);
     map.on("mousemove", onDragMove);
     map.on("mouseup", onDragEnd);
