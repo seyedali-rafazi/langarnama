@@ -102,6 +102,10 @@ button {
   display: none !important;
 }
 
+.maplibregl-ctrl-attrib.maplibregl-compact-show {
+  display: none;
+}
+
 .ship-popup .maplibregl-popup-content,
 .ship-popup .mapboxgl-popup-content {
   padding: 0;
@@ -128,4 +132,3 @@ button {
   border-top-color: #161d22;
   border-bottom-color: transparent;
 }
-
