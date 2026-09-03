@@ -3,15 +3,27 @@
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" },
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+        },
         { "key": "Pragma", "value": "no-cache" }
       ]
     }
   ],
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://langarnama-backend.onrender.com/api/:path*" },
-    { "source": "/docs", "destination": "https://langarnama-backend.onrender.com/docs" },
-    { "source": "/openapi.json", "destination": "https://langarnama-backend.onrender.com/openapi.json" },
+    {
+      "source": "/api/:path*",
+      "destination": "https://langarnama-backend-9vy7.onrender.com/api/:path*"
+    },
+    {
+      "source": "/docs",
+      "destination": "https://langarnama-backend-9vy7.onrender.com/docs"
+    },
+    {
+      "source": "/openapi.json",
+      "destination": "https://langarnama-backend-9vy7.onrender.com/openapi.json"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
