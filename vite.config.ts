@@ -48,11 +48,13 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: backendTarget,
           changeOrigin: true,
+          secure: false,
           ws: true,
         },
         '/ws': {
           target: backendTarget,
           ws: true,
+          secure: false,
           changeOrigin: true,
         },
       },

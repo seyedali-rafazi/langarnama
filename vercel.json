@@ -9,7 +9,9 @@
     }
   ],
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://langarnama-backend.vercel.app/api/:path*" },
+    { "source": "/api/:path*", "destination": "https://langarnama-backend.onrender.com/api/:path*" },
+    { "source": "/docs", "destination": "https://langarnama-backend.onrender.com/docs" },
+    { "source": "/openapi.json", "destination": "https://langarnama-backend.onrender.com/openapi.json" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

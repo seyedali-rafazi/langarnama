@@ -36,7 +36,7 @@ export interface ViewportBounds {
 }
 
 const BATCH_NOTIFY_INTERVAL_MS = 350;
-const MAX_FLEET_CAPACITY = 3500;
+const MAX_FLEET_CAPACITY = 25000;
 const STALE_VESSEL_TIMEOUT_MS = 3 * 60 * 60 * 1000; // 3 hours
 
 interface LiveShipContextValue {
@@ -206,6 +206,8 @@ export function LiveShipProvider({
       for (const item of backendShips) {
         if (item.is_live) {
           liveFleetMapRef.current.set(item.id, item);
+        } else {
+          baseFleetMapRef.current.set(item.id, item);
         }
       }
       scheduleBatchedNotify();
