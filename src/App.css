@@ -36,7 +36,13 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
   background: #0d1216;
   color: rgba(255, 255, 255, 0.92);
 }
@@ -103,7 +109,10 @@ button {
 }
 
 .maplibregl-ctrl-attrib.maplibregl-compact-show {
-  display: none;
+  display: none !important;
+}
+.maplibregl-ctrl-attrib.maplibregl-compact {
+  display: none !important;
 }
 
 .ship-popup .maplibregl-popup-content,
